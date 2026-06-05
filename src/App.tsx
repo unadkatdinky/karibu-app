@@ -9,6 +9,7 @@ import Home from './pages/public/Home';
 // 2. Lazy load heavier authenticated routes
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const Login = lazy(() => import('./pages/public/Login'));
+const Register = lazy(() => import('./pages/public/Register'));
 const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
 
 // A sleek fallback to show while the JS chunk is downloading
@@ -30,6 +31,7 @@ function App() {
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<><Navbar /><Register /></>} />
 
           {/* Protected Route Group - Only Admins */}
           <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
