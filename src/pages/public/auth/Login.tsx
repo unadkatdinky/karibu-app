@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
+import api from '../../../utils/api'; // Your custom axios instance
+import { useAuthStore } from '../../../store/useAuthStore';
+import axios from 'axios';
 
 export default function Login() {
+  const navigate = useNavigate();
+  const login = useAuthStore((state) => state.login);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -43,7 +48,7 @@ export default function Login() {
     setErrors(prev => ({ ...prev, [field]: fieldError }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+ const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const emailError = validateEmail(formData.email);
@@ -55,7 +60,37 @@ export default function Login() {
     }
 
     setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 1500);
+    
+    try {
+      // Using your pre-configured api instance handles CORS and cookies automatically
+      const response = await api.post('/auth/login', {
+        email: formData.email,
+        password: formData.password
+      });
+
+      // Update global state
+      login(response.data.user);
+      
+      // Route based on role
+      if (response.data.user.role === 'Local Guide') {
+        navigate('/guide');
+      } else {
+        navigate('/traveler');
+      }
+
+    } catch (error) {
+      console.error("Login failed:", error);
+      
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.error || "Server error. Please try again.";
+        setErrors(prev => ({ ...prev, password: errorMessage }));
+      } else {
+        setErrors(prev => ({ ...prev, password: "An unexpected error occurred." }));
+      }
+      
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isFormValid = formData.email && formData.password && !errors.email && !errors.password;

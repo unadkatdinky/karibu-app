@@ -1,2 +1,4 @@
 .env
 karibu-api # Ignores the compiled Mac binary
+node_modules
+
