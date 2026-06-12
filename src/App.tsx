@@ -6,6 +6,9 @@ import CustomCursor from './components/CustomCursor';
 // Eagerly load public pages
 import Home from './pages/public/Home'; 
 import NotFound from './pages/public/NotFound';
+import ResetPassword from './pages/public/auth/ResetPassword';
+import ForgotPassword from './pages/public/auth/ForgotPassword';
+import OTPVerification from './pages/public/auth/OTPVerification';
 
 // Lazy load auth pages (they're heavier with validation)
 const Login = lazy(() => import('./pages/public/auth/Login'));
@@ -35,7 +38,9 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verify-otp" element={<OTPVerification />} />
           {/* Protected Route Group - Admins Only */}
           <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
             <Route path="/admin" element={<AdminDashboard />} />

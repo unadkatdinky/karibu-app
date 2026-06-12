@@ -102,21 +102,24 @@ const handleSubmit = async (e: React.FormEvent) => {
     
     try {
       // Map the payload to exactly match your Go backend's RegisterInput struct
-      const response = await api.post('/auth/register', {
+      // const response =
+       await api.post('/auth/register', {
         fullName: formData.fullName,
         email: formData.email,
         password: formData.password,
         role: selectedRole === 'Local Guide' ? 'LocalGuide' : 'Traveler' // Ensure enum matches Go
       });
 
+      navigate('/verify-otp', { state: { email: formData.email } });
+
       // Update global state (your Go backend logs them in automatically on register!)
-      login(response.data.user);
+      // login(response.data.user);
       
-      if (selectedRole === 'Local Guide') {
-        navigate('/guide');
-      } else {
-        navigate('/traveler');
-      }
+      // if (selectedRole === 'Local Guide') {
+      //   navigate('/guide');
+      // } else {
+      //   navigate('/traveler');
+      // }
 
     } catch (error) {
       console.error("Registration failed:", error);
