@@ -5,12 +5,12 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import api from '../../../utils/api'; // Your custom axios instance
-import { useAuthStore } from '../../../store/useAuthStore';
+// import { useAuthStore } from '../../../store/useAuthStore';
 import axios from 'axios';
 
 export default function Register() {
   const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login);
+  // const login = useAuthStore((state) => state.login);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'Traveler' | 'Local Guide'>('Traveler');
@@ -20,7 +20,8 @@ export default function Register() {
     email: '',
     password: '',
   });
-  
+
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<{ fullName?: string; email?: string; password?: string }>({});
   const [touched, setTouched] = useState({ fullName: false, email: false, password: false });
 
@@ -86,9 +87,20 @@ export default function Register() {
     setErrors(prev => ({ ...prev, [field]: fieldError }));
   };
 
+  const getPasswordStrengthError = (password: string) => {
+  if (!password) return '';
+  if (password.length < 8) return 'Must be at least 8 characters.';
+  if (!/[A-Z]/.test(password)) return 'Must contain an uppercase letter.';
+  if (!/[a-z]/.test(password)) return 'Must contain a lowercase letter.';
+  if (!/[0-9]/.test(password)) return 'Must contain a number.';
+  if (!/[^A-Za-z0-9]/.test(password)) return 'Must contain a special character.';
+  return ''; // Returns empty string if it passes all tests!
+};
+
 const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // STRICT FRONTEND VALIDATION
     const nameError = validateFullName(formData.fullName);
     const emailError = validateEmail(formData.email);
     const passwordError = validatePassword(formData.password);
@@ -98,47 +110,48 @@ const handleSubmit = async (e: React.FormEvent) => {
       return;
     }
 
+    if (formData.password !== confirmPassword) {
+      setErrors(prev => ({ ...prev, password: "Passwords do not match." }));
+      return;
+    }
+
     setIsLoading(true);
     
     try {
-      // Map the payload to exactly match your Go backend's RegisterInput struct
-      // const response =
-       await api.post('/auth/register', {
+      await api.post('/auth/register', {
         fullName: formData.fullName,
         email: formData.email,
         password: formData.password,
-        role: selectedRole === 'Local Guide' ? 'LocalGuide' : 'Traveler' // Ensure enum matches Go
+        role: selectedRole === 'Local Guide' ? 'LocalGuide' : 'Traveler' 
       });
 
+      // Route them to the OTP page and pass the email invisibly
       navigate('/verify-otp', { state: { email: formData.email } });
-
-      // Update global state (your Go backend logs them in automatically on register!)
-      // login(response.data.user);
-      
-      // if (selectedRole === 'Local Guide') {
-      //   navigate('/guide');
-      // } else {
-      //   navigate('/traveler');
-      // }
 
     } catch (error) {
       console.error("Registration failed:", error);
       
-      // Type Guard: Check if this error came from our Go server via Axios
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data?.error || "Server error. Please try again.";
+        const data = error.response?.data;
         
-        if (error.response?.status === 409) {
-          setErrors(prev => ({ ...prev, email: errorMessage }));
-        } else {
-          setErrors(prev => ({ ...prev, password: errorMessage }));
+        // CATCH SPECIFIC BACKEND VALIDATION ERRORS
+        // Check if our Go backend sent the detailed PasswordError array
+        if (data?.details && Array.isArray(data.details) && data.details.length > 0) {
+          // Grab the exact message from the first error in the array!
+          setErrors(prev => ({ ...prev, password: data.details[0].message }));
+        } 
+        // Catch duplicate email errors
+        else if (error.response?.status === 409) {
+          setErrors(prev => ({ ...prev, email: data?.error || "Email already exists" }));
+        } 
+        // Fallback for generic errors
+        else {
+          setErrors(prev => ({ ...prev, password: data?.error || "Server error. Please try again." }));
         }
       } else {
-        // If it's a completely random frontend crash (not from the network)
         setErrors(prev => ({ ...prev, password: "An unexpected error occurred." }));
       }
-      
-    }finally {
+    } finally {
       setIsLoading(false);
     }
   };
@@ -150,6 +163,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     !errors.fullName &&
     !errors.email &&
     !errors.password &&
+    confirmPassword && // Must not be empty
+    formData.password === confirmPassword && // Must match
     passwordStrength >= 2;
 
   return (
@@ -337,6 +352,11 @@ const handleSubmit = async (e: React.FormEvent) => {
                     </svg>
                   )}
                 </button>
+                {formData.password && getPasswordStrengthError(formData.password) && (
+                <p className="text-[12px] text-[#C4522A] mt-1 font-medium">
+                  {getPasswordStrengthError(formData.password)}
+                </p>
+              )}
               </div>
 
               {/* Password Strength Indicator */}
@@ -373,6 +393,39 @@ const handleSubmit = async (e: React.FormEvent) => {
                 >
                   {errors.password}
                 </motion.p>
+              )}
+            </motion.div>
+
+            {/* Confirm Password */}
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.32 }}
+              className="space-y-2"
+            >
+              <Label 
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-[#1C3A2E]"
+              >
+                Confirm Password
+              </Label>
+              <Input 
+                id="confirmPassword" 
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Re-enter your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className={`h-12 bg-white border-2 rounded-xl pr-12 transition-all ${
+                  formData.password && confirmPassword && formData.password !== confirmPassword
+                    ? 'border-[#C4522A] focus:border-[#C4522A] focus:ring-[#C4522A]/10'
+                    : 'border-[#1C3A2E]/10 focus:border-[#D4A853] focus:ring-[#D4A853]/10'
+                }`}
+              />
+              {/* Optional: Real-time match indicator */}
+              {confirmPassword && formData.password !== confirmPassword && (
+                <p className="text-[12px] text-[#C4522A] mt-1.5 font-medium">
+                  Passwords do not match
+                </p>
               )}
             </motion.div>
 
