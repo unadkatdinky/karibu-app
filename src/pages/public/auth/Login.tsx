@@ -72,7 +72,7 @@ export default function Login() {
       login(response.data.user);
       
       // Route based on role
-      if (response.data.user.role === 'Local Guide') {
+      if (response.data.user.role === 'LocalGuide') {
         navigate('/guide');
       } else {
         navigate('/traveler');

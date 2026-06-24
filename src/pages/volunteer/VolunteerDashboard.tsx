@@ -18,7 +18,7 @@ export default function VolunteerDashboard() {
     <div className="max-w-5xl mx-auto pb-12">
       <div className="flex justify-between items-end mb-10">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="font-serif text-[36px] text-green-deep mb-2">Welcome, {user?.name.split(' ')[0]}</h1>
+          <h1 className="font-serif text-[36px] text-green-deep mb-2">Welcome, {user?.fullName.split(' ')[0]}</h1>
           <p className="text-[15px] text-text-mid">Community Service & Event Registration Portal.</p>
         </motion.div>
         <motion.button 

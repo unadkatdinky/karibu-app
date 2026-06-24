@@ -17,7 +17,7 @@ export default function TravelerDashboard() {
   return (
     <div className="max-w-5xl mx-auto pb-12">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-        <h1 className="font-serif text-[36px] text-green-deep mb-2">Jambo, {user?.name.split(' ')[0]}</h1>
+        <h1 className="font-serif text-[36px] text-green-deep mb-2">Jambo, {user?.fullName?.split(' ')[0] ?? 'Traveler'}</h1>
         <p className="text-[15px] text-text-mid">Your personal Karibu passport and journey planner.</p>
       </motion.div>
 

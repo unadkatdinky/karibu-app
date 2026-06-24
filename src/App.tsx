@@ -18,6 +18,8 @@ const Register = lazy(() => import('./pages/public/auth/Register'));
 // Lazy load protected pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
+const TravelerDashboard = lazy(() => import('./pages/traveler/TravelerDashboard'));
+const GuideDashboard = lazy(() => import('./pages/volunteer/VolunteerDashboard'));  
 
 const PageLoader = () => (
   <div className="h-screen w-full flex items-center justify-center bg-[#faf8f4]">
@@ -61,7 +63,8 @@ function App() {
           
           {/* Protected Route Group - All Authenticated Users */}
           <Route element={<ProtectedRoute allowedRoles={['Traveler', 'LocalGuide', 'Admin']} />}>
-            {/* <Route path="/dashboard" element={<Dashboard />} /> */}
+            <Route path="/traveler" element={<TravelerDashboard />} />
+            <Route path="/guide" element={<GuideDashboard />} />
           </Route>
 
           {/* 404 Fallback */}
