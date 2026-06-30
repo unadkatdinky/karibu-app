@@ -1,9 +1,12 @@
-import { useState, useRef} from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/button';
 import api from '../../../utils/api';
 import { useAuthStore } from '../../../store/useAuthStore';
+import axios from 'axios';
+
+const RESEND_COOLDOWN_SECONDS = 60;
 
 export default function OTPVerification() {
   const location = useLocation();
@@ -16,7 +19,19 @@ export default function OTPVerification() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isResending, setIsResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
+  const [secondsLeft, setSecondsLeft] = useState(RESEND_COOLDOWN_SECONDS);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Countdown ticks every second until it hits 0, then the resend button unlocks
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [secondsLeft]);
 
   // If someone tries to access this page directly without an email, kick them out
   if (!email) {
@@ -79,6 +94,30 @@ export default function OTPVerification() {
     }
   };
 
+  const handleResend = async () => {
+    if (secondsLeft > 0 || isResending) return;
+
+    setIsResending(true);
+    setError('');
+    setResendMessage('');
+
+    try {
+      await api.post('/auth/resend-otp', { email });
+      setResendMessage('A new code has been sent to your email.');
+      setOtp(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
+      setSecondsLeft(RESEND_COOLDOWN_SECONDS);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.error || 'Could not resend code. Please try again.');
+      } else {
+        setError('Could not resend code. Please try again.');
+      }
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#faf8f4] flex items-center justify-center p-6">
       <motion.div 
@@ -116,6 +155,9 @@ export default function OTPVerification() {
           </div>
 
           {error && <p className="text-[13px] text-[#C4522A] font-medium">{error}</p>}
+          {!error && resendMessage && (
+            <p className="text-[13px] text-[#2D5A3D] font-medium">{resendMessage}</p>
+          )}
 
           <Button 
             type="submit" 
@@ -125,6 +167,31 @@ export default function OTPVerification() {
             {isLoading ? 'Verifying...' : 'Verify & Login'}
           </Button>
         </form>
+
+        {/* Resend code with cooldown timer */}
+        <div className="mt-6 text-sm text-[#666666]">
+          {secondsLeft > 0 ? (
+            <p>
+              Didn't get a code? Resend in{' '}
+              <span className="font-medium text-[#1C3A2E] tabular-nums">
+                {String(Math.floor(secondsLeft / 60)).padStart(2, '0')}:
+                {String(secondsLeft % 60).padStart(2, '0')}
+              </span>
+            </p>
+          ) : (
+            <p>
+              Didn't get a code?{' '}
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={isResending}
+                className="font-medium text-[#D4A853] hover:text-[#1C3A2E] transition-colors underline underline-offset-4 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isResending ? 'Sending...' : 'Resend code'}
+              </button>
+            </p>
+          )}
+        </div>
       </motion.div>
     </div>
   );

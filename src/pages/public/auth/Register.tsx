@@ -13,6 +13,7 @@ export default function Register() {
   // const login = useAuthStore((state) => state.login);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'Traveler' | 'Local Guide'>('Traveler');
   
   const [formData, setFormData] = useState({
@@ -39,11 +40,16 @@ export default function Register() {
     return '';
   };
 
+  // Single source of truth for password validation — mirrors the backend's
+  // rules (utils.ValidatePassword) so the same message is shown everywhere,
+  // exactly once.
   const validatePassword = (password: string) => {
     if (!password) return 'Password is required';
-    if (password.length < 8) return 'Password must be at least 8 characters';
-    if (!/[A-Z]/.test(password)) return 'Password must include an uppercase letter';
-    if (!/[0-9]/.test(password)) return 'Password must include a number';
+    if (password.length < 8) return 'Must be at least 8 characters.';
+    if (!/[A-Z]/.test(password)) return 'Must contain an uppercase letter.';
+    if (!/[a-z]/.test(password)) return 'Must contain a lowercase letter.';
+    if (!/[0-9]/.test(password)) return 'Must contain a number.';
+    if (!/[^A-Za-z0-9]/.test(password)) return 'Must contain a special character.';
     return '';
   };
 
@@ -86,16 +92,6 @@ export default function Register() {
     
     setErrors(prev => ({ ...prev, [field]: fieldError }));
   };
-
-  const getPasswordStrengthError = (password: string) => {
-  if (!password) return '';
-  if (password.length < 8) return 'Must be at least 8 characters.';
-  if (!/[A-Z]/.test(password)) return 'Must contain an uppercase letter.';
-  if (!/[a-z]/.test(password)) return 'Must contain a lowercase letter.';
-  if (!/[0-9]/.test(password)) return 'Must contain a number.';
-  if (!/[^A-Za-z0-9]/.test(password)) return 'Must contain a special character.';
-  return ''; // Returns empty string if it passes all tests!
-};
 
 const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -352,11 +348,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                     </svg>
                   )}
                 </button>
-                {formData.password && getPasswordStrengthError(formData.password) && (
-                <p className="text-[12px] text-[#C4522A] mt-1 font-medium">
-                  {getPasswordStrengthError(formData.password)}
-                </p>
-              )}
               </div>
 
               {/* Password Strength Indicator */}
@@ -409,18 +400,37 @@ const handleSubmit = async (e: React.FormEvent) => {
               >
                 Confirm Password
               </Label>
-              <Input 
-                id="confirmPassword" 
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Re-enter your password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={`h-12 bg-white border-2 rounded-xl pr-12 transition-all ${
-                  formData.password && confirmPassword && formData.password !== confirmPassword
-                    ? 'border-[#C4522A] focus:border-[#C4522A] focus:ring-[#C4522A]/10'
-                    : 'border-[#1C3A2E]/10 focus:border-[#D4A853] focus:ring-[#D4A853]/10'
-                }`}
-              />
+              <div className="relative">
+                <Input 
+                  id="confirmPassword" 
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="Re-enter your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={`h-12 bg-white border-2 rounded-xl pr-12 transition-all ${
+                    formData.password && confirmPassword && formData.password !== confirmPassword
+                      ? 'border-[#C4522A] focus:border-[#C4522A] focus:ring-[#C4522A]/10'
+                      : 'border-[#1C3A2E]/10 focus:border-[#D4A853] focus:ring-[#D4A853]/10'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#666666] hover:text-[#1C3A2E] transition-colors"
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPassword ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-4.803m5.596-3.856a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
               {/* Optional: Real-time match indicator */}
               {confirmPassword && formData.password !== confirmPassword && (
                 <p className="text-[12px] text-[#C4522A] mt-1.5 font-medium">

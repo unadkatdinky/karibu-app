@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import CustomCursor from './components/CustomCursor';
 import { useAuthStore } from './store/useAuthStore';
@@ -18,14 +18,23 @@ const Register = lazy(() => import('./pages/public/auth/Register'));
 // Lazy load protected pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
-const TravelerDashboard = lazy(() => import('./pages/traveler/TravelerDashboard'));
-const GuideDashboard = lazy(() => import('./pages/volunteer/VolunteerDashboard'));  
 
 const PageLoader = () => (
   <div className="h-screen w-full flex items-center justify-center bg-[#faf8f4]">
     <div className="w-6 h-6 border-2 border-[#D4A853] border-t-transparent rounded-full animate-spin" />
   </div>
 );
+
+// Paths where the public landing Navbar should be shown.
+// Everything else (auth pages, dashboard routes, etc.) gets no navbar here —
+// dashboard routes will get their own header from DashboardLayout instead.
+const NAVBAR_PATHS = ['/'];
+
+function LandingNavbar() {
+  const location = useLocation();
+  if (!NAVBAR_PATHS.includes(location.pathname)) return null;
+  return <Navbar />;
+}
 
 function App() {
   // 1. HOOKS MUST LIVE INSIDE THE COMPONENT
@@ -44,7 +53,7 @@ function App() {
   return (
     <BrowserRouter>
       <div className="hidden md:block"><CustomCursor /></div>
-      <Navbar />
+      <LandingNavbar />
       
       <Suspense fallback={<PageLoader />}>
         <Routes>
@@ -63,8 +72,7 @@ function App() {
           
           {/* Protected Route Group - All Authenticated Users */}
           <Route element={<ProtectedRoute allowedRoles={['Traveler', 'LocalGuide', 'Admin']} />}>
-            <Route path="/traveler" element={<TravelerDashboard />} />
-            <Route path="/guide" element={<GuideDashboard />} />
+            {/* <Route path="/dashboard" element={<Dashboard />} /> */}
           </Route>
 
           {/* 404 Fallback */}
