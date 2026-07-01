@@ -1,69 +1,91 @@
-import { motion, type Variants } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/useAuthStore';
+import PageHeader from '../../components/dashboard/PageHeader';
+import StatCard from '../../components/dashboard/StatCard';
+import ActivityFeed, { type ActivityItem } from '../../components/dashboard/ActivityFeed';
+import EmptyState from '../../components/dashboard/EmptyState';
+import DataTable, { type Column } from '../../components/dashboard/DataTable';
 
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.1 } }
-};
+interface SavedPlace {
+  name: string;
+  region: string;
+  category: string;
+  savedOn: string;
+}
 
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const } }
+const SAVED: SavedPlace[] = [
+  { name: 'Stone Town',        region: 'Zanzibar, Tanzania',  category: 'Heritage',  savedOn: 'Jun 12' },
+  { name: 'Ngorongoro Crater', region: 'Arusha, Tanzania',    category: 'Wildlife',  savedOn: 'Jun 8'  },
+  { name: 'Lamu Old Town',     region: 'Lamu, Kenya',         category: 'Heritage',  savedOn: 'May 30' },
+];
+
+const SAVED_COLUMNS: Column<SavedPlace>[] = [
+  { header: 'Place',    accessor: row => <span className="font-medium text-[#1C3A2E]">{row.name}</span> },
+  { header: 'Region',   accessor: 'region' },
+  { header: 'Category', accessor: row => (
+    <span className="inline-flex px-2 py-0.5 rounded-full bg-[#9FD4B8]/15 text-[#2D5A3D] text-[11px] font-semibold">
+      {row.category}
+    </span>
+  )},
+  { header: 'Saved',    accessor: 'savedOn', align: 'right' },
+];
+
+const ACTIVITY: ActivityItem[] = [
+  { id: 1, title: 'Saved Ngorongoro Crater',    subtitle: 'Added to your wishlist',          timestamp: '3d ago' },
+  { id: 2, title: 'Completed Stone Town tour',  subtitle: 'Guided by Juma Mwangi',           timestamp: '1w ago', dotColor: 'text-[#D4A853]' },
+  { id: 3, title: 'Note added',                 subtitle: 'Packing list for Tanzania trip',   timestamp: '1w ago' },
+  { id: 4, title: 'Account created',            subtitle: 'Welcome to Karibu',                timestamp: '2w ago', dotColor: 'text-[#9FD4B8]' },
+];
+
+const fade = {
+  hidden: { opacity: 0, y: 12 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const } },
 };
+const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
 
 export default function TravelerDashboard() {
   const { user } = useAuthStore();
+  const firstName = user?.fullName?.split(' ')[0] ?? 'Traveler';
 
   return (
-    <div className="max-w-5xl mx-auto pb-12">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-        <h1 className="font-serif text-[36px] text-green-deep mb-2">Jambo, {user?.fullName?.split(' ')[0] ?? 'Traveler'}</h1>
-        <p className="text-[15px] text-text-mid">Your personal Karibu passport and journey planner.</p>
+    <div className="pb-12">
+      <PageHeader
+        title={`Jambo, ${firstName}`}
+        subtitle="Here's where your journey stands."
+      />
+
+      {/* Stat row */}
+      <motion.div variants={stagger} initial="hidden" animate="show"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+      >
+        {[
+          { label: 'Places saved',    value: '3',    trend: '+1 this week',   trendDir: 'up'      as const, accent: '#1C3A2E' },
+          { label: 'Tours completed', value: '1',    trend: '',               trendDir: 'neutral' as const, accent: '#D4A853' },
+          { label: 'Countries',       value: '2',    trend: 'Tanzania, Kenya', trendDir: 'neutral' as const, accent: '#9FD4B8' },
+          { label: 'Notes written',   value: '1',    trend: '',               trendDir: 'neutral' as const, accent: '#C4522A' },
+        ].map((s, i) => (
+          <motion.div key={i} variants={fade}><StatCard {...s} /></motion.div>
+        ))}
       </motion.div>
 
-      <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-12 gap-6">
-        
-        {/* Main Highlight Card */}
-        <motion.div variants={itemVariants} className="md:col-span-8 bg-white rounded-[24px] p-8 border border-black/5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80')] bg-cover bg-center opacity-10 group-hover:opacity-20 transition-opacity duration-500 rounded-bl-full" />
-          <div className="relative z-10 h-full flex flex-col justify-between min-h-[180px]">
-            <div>
-              <span className="inline-block px-3 py-1 bg-gold/10 text-gold text-[10px] uppercase tracking-wider font-medium rounded-full mb-4">
-                Upcoming Trip
-              </span>
-              <h2 className="font-serif text-[32px] text-green-deep leading-none mb-2">Zanzibar Coast</h2>
-              <p className="text-[14px] text-text-mid">4 days • Historical Tour & Beaches</p>
-            </div>
-            <div className="flex items-center gap-4 mt-8">
-              <button className="bg-green-deep text-cream px-6 py-2.5 rounded-full text-[12px] uppercase tracking-wider font-medium hover:bg-green-mid transition-colors">
-                View Itinerary
-              </button>
-            </div>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Saved places table */}
+        <motion.div variants={fade} initial="hidden" animate="show" className="lg:col-span-2">
+          <h2 className="font-serif text-[20px] text-[#1C3A2E] mb-4">Saved places</h2>
+          {SAVED.length > 0
+            ? <DataTable columns={SAVED_COLUMNS} rows={SAVED} />
+            : <EmptyState icon="🗺️" title="No saved places yet" description="Explore destinations and tap the bookmark to save them here." />
+          }
         </motion.div>
 
-        {/* Stats Cards */}
-        <motion.div variants={itemVariants} className="md:col-span-4 bg-green-deep text-cream rounded-[24px] p-8 shadow-[0_8px_30px_rgba(28,58,46,0.15)] flex flex-col justify-center text-center">
-          <p className="text-[12px] uppercase tracking-widest text-gold mb-2 font-medium">Saved Places</p>
-          <p className="font-serif text-[48px] leading-none mb-4">12</p>
-          <p className="text-[13px] text-green-light">Across 3 countries</p>
-        </motion.div>
-
-        <motion.div variants={itemVariants} className="md:col-span-12 bg-white rounded-[24px] p-8 border border-black/5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mt-4">
-          <div className="flex justify-between items-end mb-6">
-            <h3 className="font-serif text-[24px] text-green-deep">Recent Travel Notes</h3>
-            <button className="text-[12px] text-gold uppercase tracking-wider font-medium hover:text-green-deep transition-colors">View All</button>
-          </div>
-          <div className="space-y-4">
-            {['Remember to greet elders with Shikamoo before asking for directions.', 'The sunset view at Mwanza rock formations is best at 5:45 PM.'].map((note, i) => (
-              <div key={i} className="p-4 rounded-xl bg-[#faf8f4] border border-black/5 text-[14px] text-text-mid leading-relaxed">
-                {note}
-              </div>
-            ))}
+        {/* Activity feed */}
+        <motion.div variants={fade} initial="hidden" animate="show">
+          <h2 className="font-serif text-[20px] text-[#1C3A2E] mb-4">Recent activity</h2>
+          <div className="bg-white rounded-2xl border border-black/5 px-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+            <ActivityFeed items={ACTIVITY} />
           </div>
         </motion.div>
-
-      </motion.div>
+      </div>
     </div>
   );
 }

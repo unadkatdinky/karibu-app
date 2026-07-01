@@ -1,86 +1,103 @@
-import { motion, type Variants } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/useAuthStore';
+import PageHeader from '../../components/dashboard/PageHeader';
+import StatCard from '../../components/dashboard/StatCard';
+import DataTable, { type Column } from '../../components/dashboard/DataTable';
+import ActivityFeed, { type ActivityItem } from '../../components/dashboard/ActivityFeed';
+import StatusBadge from '../../components/dashboard/StatusBadge';
 
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.08 } }
+// ── Placeholder data ── swap for real API calls once your Go endpoints are ready
+
+interface LogEntry {
+  action: string;
+  user: string;
+  ref: string;
+  status: string;
+}
+
+const RECENT_LOGS: LogEntry[] = [
+  { action: 'Account registered',       user: 'amina.karimi@example.com',  ref: 'Role: Traveler',   status: 'active'  },
+  { action: 'Content submitted',         user: 'guide.mwangi@example.com',  ref: 'Tour #TZ-094',     status: 'pending' },
+  { action: 'Password reset requested', user: 'sarah.j@example.com',        ref: 'Via email link',   status: 'active'  },
+  { action: 'Account flagged',          user: 'system',                      ref: 'Duplicate email',  status: 'error'   },
+];
+
+const LOG_COLUMNS: Column<LogEntry>[] = [
+  { header: 'Action',  accessor: 'action' },
+  { header: 'User',    accessor: row => <span className="font-mono text-[12px] text-[#888]">{row.user}</span> },
+  { header: 'Ref',     accessor: 'ref' },
+  { header: 'Status',  accessor: row => <StatusBadge status={row.status} />, align: 'right' },
+];
+
+const ACTIVITY: ActivityItem[] = [
+  { id: 1, title: 'New guide registration', subtitle: 'akosua.asante@example.com — awaiting review', timestamp: '2m ago', dotColor: 'text-[#D4A853]' },
+  { id: 2, title: 'Tour content approved',  subtitle: 'Stone Town Heritage Walk — Tour #TZ-091',      timestamp: '18m ago' },
+  { id: 3, title: 'User reported',          subtitle: 'Spam content — flagged for manual review',      timestamp: '1h ago', dotColor: 'text-[#C4522A]' },
+  { id: 4, title: 'System health check',    subtitle: 'All services nominal',                          timestamp: '2h ago' },
+];
+
+const fade = {
+  hidden: { opacity: 0, y: 12 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const } },
 };
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 15 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const } }
+const stagger = {
+  hidden: { opacity: 0 },
+  show:   { opacity: 1, transition: { staggerChildren: 0.07 } },
 };
 
 export default function AdminDashboard() {
   const { user } = useAuthStore();
 
   return (
-    <div className="max-w-6xl mx-auto pb-12">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-        <h1 className="font-serif text-[36px] text-green-deep mb-2">System Overview</h1>
-        <p className="text-[15px] text-text-mid">Authenticated as {user?.name} (Root Access).</p>
-      </motion.div>
+    <div className="pb-12">
+      <PageHeader
+        title="System overview"
+        subtitle={`Signed in as ${user?.fullName} — root access`}
+        action={
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C4522A]/10 text-[#C4522A] text-[11px] font-semibold uppercase tracking-wide">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C4522A] animate-pulse" />
+            Admin
+          </span>
+        }
+      />
 
-      <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      {/* Stat row */}
+      <motion.div variants={stagger} initial="hidden" animate="show"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+      >
         {[
-          { label: 'Active Users', value: '1,204', trend: '+12% this week' },
-          { label: 'Pending Approvals', value: '14', trend: 'Requires attention' },
-          { label: 'System Uptime', value: '99.9%', trend: 'Operational' },
-          { label: 'Active Events', value: '8', trend: 'Live on platform' },
-        ].map((stat, i) => (
-          <motion.div key={i} variants={itemVariants} className="bg-white p-6 rounded-2xl border border-black/5 shadow-sm">
-            <p className="text-[11px] uppercase tracking-widest text-text-mid mb-2 font-medium">{stat.label}</p>
-            <p className="font-serif text-[32px] text-green-deep mb-2 leading-none">{stat.value}</p>
-            <p className="text-[11px] text-gold font-medium">{stat.trend}</p>
+          { label: 'Total users',       value: '1,204', trend: '+12 this week', trendDir: 'up'     as const, accent: '#1C3A2E' },
+          { label: 'Pending reviews',   value: '14',    trend: 'Needs attention', trendDir: 'down'  as const, accent: '#C4522A' },
+          { label: 'Active guides',     value: '38',    trend: '+3 this month',  trendDir: 'up'     as const, accent: '#D4A853' },
+          { label: 'Uptime',            value: '99.9%', trend: 'Operational',    trendDir: 'neutral' as const, accent: '#9FD4B8' },
+        ].map((s, i) => (
+          <motion.div key={i} variants={fade}>
+            <StatCard {...s} />
           </motion.div>
         ))}
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Recent System Logs */}
-        <motion.div variants={itemVariants} initial="hidden" animate="show" className="lg:col-span-2 bg-white rounded-[24px] border border-black/5 shadow-sm overflow-hidden">
-          <div className="px-6 py-5 border-b border-black/5 flex justify-between items-center">
-            <h3 className="font-serif text-[18px] text-green-deep">Recent Submissions & Logs</h3>
-            <button className="text-[11px] uppercase tracking-wider font-medium text-text-mid hover:text-green-deep">Export CSV</button>
+      {/* Main grid: log table + activity feed */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Log table — takes 2/3 width on large screens */}
+        <motion.div variants={fade} initial="hidden" animate="show" className="lg:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-serif text-[20px] text-[#1C3A2E]">Recent activity log</h2>
+            <button className="text-[11px] uppercase tracking-wider font-semibold text-[#888] hover:text-[#1C3A2E] transition-colors">
+              Export CSV
+            </button>
           </div>
-          <div className="divide-y divide-black/5">
-            {[
-              { user: "Sarah Jenkins", action: "RSVP Submitted", ref: "Invitation ID: 89", status: "Success" },
-              { user: "System Admin", action: "Charge Bearer Setting", ref: "Single Toggle applied to event", status: "Updated" },
-              { user: "Michael Chen", action: "Account Registered", ref: "Role: Volunteer", status: "Pending" },
-            ].map((log, i) => (
-              <div key={i} className="px-6 py-4 flex items-center justify-between text-[13px]">
-                <div>
-                  <p className="font-medium text-green-deep">{log.action}</p>
-                  <p className="text-text-mid mt-0.5">By {log.user} • <span className="font-mono text-[11px] bg-black/5 px-1.5 py-0.5 rounded">{log.ref}</span></p>
-                </div>
-                <span className={`px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wider font-medium ${
-                  log.status === 'Pending' ? 'bg-gold/10 text-gold' : 'bg-green-deep/10 text-green-deep'
-                }`}>
-                  {log.status}
-                </span>
-              </div>
-            ))}
-          </div>
+          <DataTable columns={LOG_COLUMNS} rows={RECENT_LOGS} />
         </motion.div>
 
-        {/* Right Column: Quick Actions */}
-        <motion.div variants={itemVariants} initial="hidden" animate="show" className="bg-[#1C3A2E] text-cream rounded-[24px] p-8 shadow-lg h-fit">
-          <h3 className="font-serif text-[22px] mb-6 text-gold">Quick Controls</h3>
-          <div className="space-y-4">
-            <button className="w-full text-left px-5 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-[13px] font-medium flex justify-between items-center">
-              Global Event Settings <span>→</span>
-            </button>
-            <button className="w-full text-left px-5 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-[13px] font-medium flex justify-between items-center">
-              Manage API Keys <span>→</span>
-            </button>
-            <button className="w-full text-left px-5 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-[13px] font-medium flex justify-between items-center">
-              Review Content (14) <span>→</span>
-            </button>
+        {/* Activity feed — takes 1/3 */}
+        <motion.div variants={fade} initial="hidden" animate="show">
+          <h2 className="font-serif text-[20px] text-[#1C3A2E] mb-4">Live feed</h2>
+          <div className="bg-white rounded-2xl border border-black/5 px-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+            <ActivityFeed items={ACTIVITY} />
           </div>
         </motion.div>
       </div>
-
     </div>
   );
 }
