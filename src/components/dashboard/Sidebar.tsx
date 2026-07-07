@@ -98,12 +98,15 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               key={link.path}
               to={link.path}
               title={collapsed ? link.name : undefined}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 ${
-                isActive
-                  ? `${accent.activeBg} ${accent.activeText}`
-                  : 'text-[#F5EDD8]/45 hover:text-[#F5EDD8] hover:bg-white/5'
-              }`}
-            >
+              className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 ${
+  isActive
+    ? `${accent.activeBg} ${accent.activeText}`
+    : 'text-[#F5EDD8]/45 hover:text-[#F5EDD8] hover:bg-white/5'
+}`}
+>
+  {isActive && (
+    <span className={`absolute -left-2 top-1/2 -translate-y-1/2 w-[3px] h-[18px] rounded-r-full ${accent.dot}`} />
+  )}
               <span className={isActive ? accent.activeText : ''}>{ICON_MAP[link.icon]}</span>
               <AnimatePresence>
                 {!collapsed && (
@@ -119,6 +122,23 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           );
         })}
       </nav>
+
+      {/* ── Guide CTA (traveler only) ────────────────────────────────────── */}
+<AnimatePresence>
+  {!collapsed && role === 'Traveler' && (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="mx-2 mb-2 p-3.5 rounded-xl bg-[#D4A853]/10 border border-[#D4A853]/25"
+    >
+      <p className="text-[12px] text-[#F5EDD8]/70 leading-relaxed mb-2.5">
+        Know East Africa well? Apply to become a Local Guide and start earning.
+      </p>
+      <button className="w-full text-center bg-[#D4A853] text-[#1C3A2E] text-[12px] font-semibold py-2 rounded-lg">
+        Become a Guide
+      </button>
+    </motion.div>
+  )}
+</AnimatePresence>
 
       {/* ── User row + logout ─────────────────────────────────────────────── */}
       <div className="p-2 border-t border-white/5 space-y-0.5 shrink-0">

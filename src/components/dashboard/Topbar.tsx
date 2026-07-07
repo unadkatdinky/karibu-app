@@ -1,7 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import { useAuthStore, type UserRole } from '../../store/useAuthStore';
 import { ROLE_CONFIG } from './roleConfig';
-import { IconMenu, IconBell } from './icons';
+import { IconMenu, IconBell, IconSearch } from './icons';
 
 interface TopbarProps {
   onMenuClick: () => void;
@@ -38,13 +38,25 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
       </p>
 
       {/* Right side: notification bell + avatar */}
-      <div className="ml-auto flex items-center gap-3">
-        <button
-          className="relative text-[#1C3A2E]/30 hover:text-[#1C3A2E] transition-colors p-1.5 rounded-lg hover:bg-black/5"
-          aria-label="Notifications"
-        >
-          <IconBell />
-        </button>
+     
+       {/* Right side: search + notification bell + avatar */}
+<div className="ml-auto flex items-center gap-3">
+  <div className="hidden md:flex items-center gap-2 bg-[#faf8f4] border border-[#1C3A2E]/[0.08] rounded-[10px] px-3.5 py-2 w-60">
+    <span className="text-[#1C3A2E]/30"><IconSearch /></span>
+    <input
+      type="text"
+      placeholder="Search destinations, guides..."
+      className="bg-transparent outline-none text-[13px] text-[#1C3A2E] placeholder:text-[#1C3A2E]/35 w-full"
+    />
+  </div>
+
+  <button
+    className="relative w-[38px] h-[38px] flex items-center justify-center text-[#1C3A2E]/50 hover:text-[#1C3A2E] transition-colors rounded-[10px] border border-[#1C3A2E]/[0.08] bg-white"
+    aria-label="Notifications"
+  >
+    <IconBell />
+    <span className="absolute top-[7px] right-[7px] w-[7px] h-[7px] rounded-full bg-[#C4522A] border-[1.5px] border-white" />
+  </button>
 
         <div className="h-6 w-px bg-black/8 hidden sm:block" />
 

@@ -28,3 +28,13 @@ export function IconTrendDown()   { return <svg {...props}><path d="M2.25 6L9 12
 export function IconSearch()      { return <svg {...props}><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>; }
 export function IconBell()        { return <svg {...props}><path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>; }
 export function IconDot()         { return <svg fill="currentColor" viewBox="0 0 8 8" className="w-2 h-2 shrink-0"><circle cx="4" cy="4" r="4"/></svg>; }
+export function IconCompass()     { return <svg {...props}><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6-13v13m6 0l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 7m0 13V7m0 0L9 4"/></svg>; }
+export function IconChat()        { return <svg {...props}><path d="M8 9h8M8 13h6m-9 8l3.5-3.5H18a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v9a2 2 0 002 2h0z"/></svg>; }
+export function IconClock()       { return <svg {...props}><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 9v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>; }
+export function IconLanguage()    { return <svg {...props}><path d="M19 11a7 7 0 11-14 0 7 7 0 0114 0z"/><path d="M5 21l1.5-4M19 21l-1.5-4"/></svg>; }
+export function IconArrowRight()  { return <svg {...props} className="w-3.5 h-3.5"><path d="M9 5l7 7-7 7"/></svg>; }
+export function IconPlay()        { return <svg fill="currentColor" viewBox="0 0 24 24" className="w-3.5 h-3.5"><path d="M8 5v14l11-7z"/></svg>; }
+export function IconCheck()       { return <svg {...props} strokeWidth={2.5} className="w-3 h-3"><path d="M5 13l4 4L19 7"/></svg>; }
+export function IconPulse()       { return <svg {...props}><path d="M3 12h4l2.5-7L13 18l2.5-6H21"/></svg>; }
+export function IconStar()        { return <svg {...props}><path d="M12 2.25l2.998 6.075 6.706.974-4.852 4.73 1.145 6.677L12 17.5l-5.997 3.206 1.145-6.677-4.852-4.73 6.706-.974L12 2.25z"/></svg>; }
+export function IconCalendar()    { return <svg {...props}><path d="M6.75 3v2.25M17.25 3v2.25M3.75 8.25h16.5M5.25 4.5h13.5A1.5 1.5 0 0120.25 6v13.5a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5V6a1.5 1.5 0 011.5-1.5z"/></svg>; }
