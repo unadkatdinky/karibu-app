@@ -22,6 +22,8 @@ const AdminDashboard    = lazy(() => import('./pages/admin/AdminDashboard'));
 const ManageUsers       = lazy(() => import('./pages/admin/ManageUsers'));
 const TravelerDashboard = lazy(() => import('./pages/traveler/TravelerDashboard'));
 const SavedPlaces       = lazy(() => import('./pages/traveler/SavedPlaces'));
+const ExploreDestinations = lazy(() => import('./pages/traveler/ExploreDestinations'));
+const DestinationDetail   = lazy(() => import('./pages/traveler/DestinationDetail'));
 const GuideDashboard    = lazy(() => import('./pages/guide/GuideDashboard'));
 const CommunityTasks    = lazy(() => import('./pages/guide/CommunityTasks'));
 
@@ -87,6 +89,8 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles={['Traveler', 'Admin']} />}>
             <Route element={<DashboardLayout />}>
               <Route path="/traveler"       element={<TravelerDashboard />} />
+              <Route path="/traveler/explore"          element={<ExploreDestinations />} />
+              <Route path="/traveler/explore/:slug"    element={<DestinationDetail />} />
               <Route path="/traveler/saved" element={<SavedPlaces />} />
             </Route>
           </Route>

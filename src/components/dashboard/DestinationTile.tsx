@@ -9,8 +9,15 @@ export default function DestinationTile({ name, color, image, onClick }: Destina
   return (
     <button
       onClick={onClick}
-      className="relative h-[110px] rounded-2xl overflow-hidden bg-cover bg-center text-left"
-      style={{ backgroundColor: color, backgroundImage: image ? `url(${image})` : undefined }}
+      className="relative block w-full overflow-hidden text-left"
+      style={{
+        height: '110px',
+        borderRadius: '16px',
+        backgroundColor: color || '#2D5A3D',
+        backgroundImage: image ? `url(${image})` : undefined,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
     >
       <div
         className="absolute inset-0"

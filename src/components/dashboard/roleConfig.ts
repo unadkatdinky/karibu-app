@@ -69,6 +69,7 @@ export const ROLE_CONFIG: Record<UserRole, RoleConfig> = {
     },
     navLinks: [
       { name: 'My journey',   path: '/traveler',        icon: 'map'      },
+      { name: 'Explore',      path: '/traveler/explore', icon: 'compass' },
       { name: 'Saved places', path: '/traveler/saved',  icon: 'bookmark' },
       { name: 'Travel notes', path: '/traveler/notes',  icon: 'scroll'   },
     ],
