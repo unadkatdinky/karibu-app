@@ -26,7 +26,7 @@ const ExploreDestinations = lazy(() => import('./pages/traveler/ExploreDestinati
 const DestinationDetail   = lazy(() => import('./pages/traveler/DestinationDetail'));
 const GuideDashboard    = lazy(() => import('./pages/guide/GuideDashboard'));
 const CommunityTasks    = lazy(() => import('./pages/guide/CommunityTasks'));
-
+const AdminDestinations = lazy(() => import('./pages/admin/AdminDestinations'));
 // ── Shared ─────────────────────────────────────────────────────────────────────
 const PageLoader = () => (
   <div className="h-screen w-full flex items-center justify-center bg-[#faf8f4]">
@@ -74,6 +74,7 @@ export default function App() {
             <Route element={<DashboardLayout />}>
               <Route path="/admin"          element={<AdminDashboard />} />
               <Route path="/admin/users"    element={<ManageUsers />} />
+              <Route path="/admin/destinations" element={<AdminDestinations />} />
             </Route>
           </Route>
 

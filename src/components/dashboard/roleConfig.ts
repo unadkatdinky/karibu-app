@@ -37,10 +37,10 @@ export const ROLE_CONFIG: Record<UserRole, RoleConfig> = {
       activeBg:   'bg-[#C4522A]/10',
       activeText: 'text-[#C4522A]',
     },
-    navLinks: [
-      { name: 'Overview', path: '/admin',         icon: 'overview' },
-      { name: 'Users',    path: '/admin/users',   icon: 'users'    },
-      { name: 'Content',  path: '/admin/content', icon: 'shield'   },
+   navLinks: [
+      { name: 'Overview',     path: '/admin',              icon: 'overview' },
+      { name: 'Users',        path: '/admin/users',        icon: 'users'    },
+      { name: 'Destinations', path: '/admin/destinations', icon: 'map'      },
     ],
   },
   LocalGuide: {
