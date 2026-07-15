@@ -27,6 +27,7 @@ const DestinationDetail   = lazy(() => import('./pages/traveler/DestinationDetai
 const GuideDashboard    = lazy(() => import('./pages/guide/GuideDashboard'));
 const CommunityTasks    = lazy(() => import('./pages/guide/CommunityTasks'));
 const AdminDestinations = lazy(() => import('./pages/admin/AdminDestinations'));
+const TrailPlanner       = lazy(() => import('./pages/traveler/TrailPlanner'));
 // ── Shared ─────────────────────────────────────────────────────────────────────
 const PageLoader = () => (
   <div className="h-screen w-full flex items-center justify-center bg-[#faf8f4]">
@@ -92,6 +93,7 @@ export default function App() {
               <Route path="/traveler"       element={<TravelerDashboard />} />
               <Route path="/traveler/explore"          element={<ExploreDestinations />} />
               <Route path="/traveler/explore/:slug"    element={<DestinationDetail />} />
+              <Route path="/traveler/itinerary"        element={<TrailPlanner />} />
               <Route path="/traveler/saved" element={<SavedPlaces />} />
             </Route>
           </Route>

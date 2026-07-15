@@ -5,7 +5,7 @@ import { ROLE_CONFIG } from './roleConfig';
 import {
   IconOverview, IconUsers, IconShield, IconMap,
   IconBookmark, IconScroll, IconTasks, IconGuide,
-  IconLogout, IconChevronLeft, IconCompass,
+  IconLogout, IconChevronLeft, IconCompass, IconCalendar,
 } from './icons';
 
 // Map icon key strings (from roleConfig) to actual React components.
@@ -20,6 +20,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   tasks:    <IconTasks />,
   guide:    <IconGuide />,
   compass:  <IconCompass />,
+  calendar: <IconCalendar />,
 };
 
 interface SidebarProps {
