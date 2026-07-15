@@ -1,4 +1,5 @@
-// --- Types ---
+import api from '../utils/api';
+
 export interface ItineraryStop {
   id: string;
   dayId: string;
@@ -29,74 +30,56 @@ export interface Itinerary {
   budget: number;
   season: string;
   seasonNote: string;
-  days?: ItineraryDay[]; 
+  days?: ItineraryDay[];
 }
 
-// --- API Functions ---
-const API_BASE = '/api/v1'; // Adjust if you use a specific axios instance or config
+export interface CreateItineraryInput {
+  name: string;
+  startDate: string;
+  travelers: number;
+  budget: number;
+}
+
+export interface AddDayInput {
+  date: string;
+  region: string;
+  place: string;
+  sortOrder?: number;
+}
+
+export interface AddStopInput {
+  name: string;
+  timeLabel?: string;
+  cost?: number;
+  category?: string;
+  sortOrder?: number;
+}
 
 export async function fetchItineraries(): Promise<Itinerary[]> {
-  const res = await fetch(`${API_BASE}/itineraries`, { credentials: 'omit' }); // use 'include' if using cookies
-  if (!res.ok) throw new Error('Failed to load trips');
-  const data = await res.json();
-  return data.itineraries;
+  const res = await api.get('/itineraries');
+  return res.data.itineraries;
 }
 
 export async function fetchItineraryById(id: string): Promise<Itinerary> {
-  const res = await fetch(`${API_BASE}/itineraries/${id}`);
-  if (!res.ok) throw new Error('Failed to load trip details');
-  const data = await res.json();
-  return data.itinerary;
+  const res = await api.get(`/itineraries/${id}`);
+  return res.data.itinerary;
 }
 
-export async function createItinerary(data: { name: string; startDate: string; travelers: number; budget: number }): Promise<Itinerary> {
-  const res = await fetch(`${API_BASE}/itineraries`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-    credentials: 'omit', // use 'include' if using cookies
-  });
-  
-  if (!res.ok) throw new Error('Failed to create trip permit');
-  const responseData = await res.json();
-  return responseData.itinerary;
+export async function createItinerary(data: CreateItineraryInput): Promise<Itinerary> {
+  const res = await api.post('/itineraries', data);
+  return res.data.itinerary;
+}
+
+export async function addItineraryDay(itineraryId: string, data: AddDayInput): Promise<ItineraryDay> {
+  const res = await api.post(`/itineraries/${itineraryId}/days`, data);
+  return res.data.day;
+}
+
+export async function addItineraryStop(dayId: string, data: AddStopInput): Promise<ItineraryStop> {
+  const res = await api.post(`/itineraries/days/${dayId}/stops`, data);
+  return res.data.stop;
 }
 
 export async function generateItinerarySuggestions(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/itineraries/${id}/suggest`, {
-    method: 'POST',
-    credentials: 'omit',
-  });
-  if (!res.ok) throw new Error('Failed to generate suggestions');
+  await api.post(`/itineraries/${id}/suggest`);
 }
-
-export async function addItineraryDay(
-  itineraryId: string, 
-  data: { date: string; region: string; place: string; sortOrder: number }
-): Promise<ItineraryDay> {
-  const res = await fetch(`${API_BASE}/itineraries/${itineraryId}/days`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-    credentials: 'omit',
-  });
-  if (!res.ok) throw new Error('Failed to add day');
-  const responseData = await res.json();
-  return responseData.day;
-}
-
-export async function addItineraryStop(
-  dayId: string, 
-  data: { name: string; timeLabel: string; cost: number; category: string; sortOrder: number }
-): Promise<ItineraryStop> {
-  const res = await fetch(`${API_BASE}/itineraries/days/${dayId}/stops`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-    credentials: 'omit',
-  });
-  if (!res.ok) throw new Error('Failed to add stop');
-  const responseData = await res.json();
-  return responseData.stop;
-}
-// You can add createItinerary, addDay, and addStop here following the same pattern.

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { 
   fetchItineraries, 
   fetchItineraryById, 
@@ -19,54 +19,56 @@ export default function TrailPlanner() {
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const loadTripDetails = useCallback(async (id: string) => {
+    setLoading(true);
+    setIsCreating(false);
+    setErrorMsg('');
+    try {
+      const fullTrip = await fetchItineraryById(id);
+      setActiveTrip(fullTrip);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg('Could not load that trip. Try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchItineraries()
       .then((data) => {
         setTrips(data);
         if (data.length > 0) {
-          loadTripDetails(data[0].id);
+          void loadTripDetails(data[0].id);
         } else {
-          setIsCreating(true); 
+          setIsCreating(true);
           setLoading(false);
         }
       })
       .catch((err) => {
         console.error(err);
+        setErrorMsg('Could not load your trips. Try refreshing.');
         setLoading(false);
       });
-  }, []);
+  }, [loadTripDetails]);
 
-  const loadTripDetails = async (id: string) => {
-    setLoading(true);
-    setIsCreating(false); 
-    try {
-      const fullTrip = await fetchItineraryById(id);
-      setActiveTrip(fullTrip);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreateTrip = async (data: { name: string; startDate: string; travelers: number; budget: number }) => {
-    setCreateLoading(true);
-    try {
-      const newTrip = await createItinerary(data); 
-      setTrips((prev) => [...prev, newTrip]);
-      
-      // Hit Gemini API to build out the custom trip days & stops
-      await generateItinerarySuggestions(newTrip.id);
-      
-      // Load the freshly populated trip
-      await loadTripDetails(newTrip.id);
-    } catch (err) {
-      console.error("Failed to create trip:", err);
-    } finally {
-      setCreateLoading(false);
-    }
-  };
+ const handleCreateTrip = async (data: { name: string; startDate: string; travelers: number; budget: number }) => {
+  setCreateLoading(true);
+  setErrorMsg('');
+  try {
+    const newTrip = await createItinerary(data);
+    setTrips((prev) => [...prev, newTrip]);
+    await generateItinerarySuggestions(newTrip.id);
+    await loadTripDetails(newTrip.id);
+  } catch (err) {
+    console.error("Failed to create trip:", err);
+    setErrorMsg('Could not create that trip. Try again.');
+  } finally {
+    setCreateLoading(false);
+  }
+};
 
   const handleAddDay = async (place: string, date: string, region: string) => {
     if (!activeTrip) return;
@@ -122,6 +124,12 @@ export default function TrailPlanner() {
         Pull in the places you've saved, borrow a route from a local guide, or start blank. 
         We'll stamp in the season, the weather, and what to pack as you go.
       </p>
+
+      {errorMsg && (
+        <p className="text-[13px] text-[#C4522A] bg-[#C4522A]/10 rounded-lg px-4 py-2.5 mb-6">
+          {errorMsg}
+        </p>
+      )}
 
       {/* Trip Switcher Strip */}
       <div className="flex items-center gap-2.5 overflow-x-auto pb-2 mb-6">
@@ -185,7 +193,10 @@ export default function TrailPlanner() {
               </div>
             )}
 
-            <SavedStrip />
+            <SavedStrip 
+              days={activeTrip.days ?? []} 
+              onStopAdded={() => loadTripDetails(activeTrip.id)}
+            />
           </div>
 
           <div className="flex flex-col gap-5">
@@ -211,7 +222,7 @@ export default function TrailPlanner() {
               
               <p className="font-serif text-[18px] text-[#1C3A2E] mt-1 mb-1">Budget tracker</p>
               <p className="text-[12.5px] text-[#666] italic mb-3 leading-relaxed">
-                Tracking against your ${activeTrip.budget?.toLocaleString()} per-person budget.
+                Tracking against your ${(activeTrip.budget ?? 0).toLocaleString()} per-person budget.
               </p>
               
               <div className="h-[9px] rounded-full bg-[#EDE3D0] overflow-hidden mb-2.5">
