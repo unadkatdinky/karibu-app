@@ -57,12 +57,16 @@ export interface AddStopInput {
 
 export async function fetchItineraries(): Promise<Itinerary[]> {
   const res = await api.get('/itineraries');
-  return res.data.itineraries;
+  return res.data?.itineraries || [];
 }
 
 export async function fetchItineraryById(id: string): Promise<Itinerary> {
   const res = await api.get(`/itineraries/${id}`);
-  return res.data.itinerary;
+  const itinerary = res.data?.itinerary || {};
+  return {
+    ...itinerary,
+    days: itinerary.days || []
+  };
 }
 
 export async function createItinerary(data: CreateItineraryInput): Promise<Itinerary> {
