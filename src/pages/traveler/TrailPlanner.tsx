@@ -11,6 +11,7 @@ import {
 import TrailMap from '../../components/planner/TrailMap';
 import PermitCard from '../../components/planner/PermitCard';
 import SavedStrip from '../../components/planner/SavedStrip';
+import LoadingState from '../../components/ui/LoadingState';
 
 export default function TrailPlanner() {
   const [trips, setTrips] = useState<Itinerary[]>([]);
@@ -57,19 +58,26 @@ export default function TrailPlanner() {
 
   // 3. Handle Permit Submission
   const handleCreateTrip = async (data: { name: string; startDate: string; travelers: number; budget: number }) => {
+    setLoading(true); // Put the entire screen into global loading mode immediately
     setCreateLoading(true);
+    setIsCreating(false);
     try {
-      // 1. Create the blank permit
+      // 1. Create the base entry record
       const newTrip = await createItinerary(data);
-      setTrips((prev) => [...prev, newTrip]);
 
-      // 2. Ask Gemini to fill it with days and stops!
+      // 2. Await the complete generation engine execution
       await generateItinerarySuggestions(newTrip.id);
 
-      // 3. Load the now-populated trip
+      // 3. Update top-level trips index silently
+      const refreshedTrips = await fetchItineraries();
+      setTrips(refreshedTrips || []);
+
+      // 4. Load the fully populated trip artifact directly
       await loadTripDetails(newTrip.id);
     } catch (err) {
-      console.error("Failed to create trip:", err);
+      console.error("Failed to map pipeline trip generation:", err);
+      setIsCreating(true); // Return fallback layout context
+      setLoading(false);
     } finally {
       setCreateLoading(false);
     }
@@ -95,9 +103,10 @@ export default function TrailPlanner() {
   };
 
   // 6. Budget breakdown, computed from actual stop costs (not a placeholder bar)
+  const days = activeTrip?.days ?? [];
   const budgetBreakdown = (() => {
     const totals: Record<string, number> = {};
-    activeTrip?.days?.forEach((day) => {
+    days.forEach((day) => {
       day.stops?.forEach((stop) => {
         totals[stop.category || 'Other'] = (totals[stop.category || 'Other'] || 0) + (stop.cost || 0);
       });
@@ -108,8 +117,11 @@ export default function TrailPlanner() {
 
   if (loading && !activeTrip && !isCreating) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="w-6 h-6 border-2 border-[#D4A853] border-t-transparent rounded-full animate-spin" />
+      <div className="flex justify-center items-center min-h-[420px] px-4 py-10">
+        <LoadingState
+          message="Crafting your itinerary..."
+          submessage="The AI is mapping routes, seasons, and stops for your journey."
+        />
       </div>
     );
   }
@@ -187,7 +199,7 @@ export default function TrailPlanner() {
       {/* Overview strip */}
       {activeTrip && !isCreating && activeTrip.days && activeTrip.days.length > 0 && (
         <div className="flex items-center gap-2.5 mt-8 mb-1.5">
-          {activeTrip.days.map((day, i) => (
+          {days.map((day, i) => (
             <div key={day.id} className="flex items-center gap-2.5 flex-1 last:flex-none">
               <div
                 className="w-[26px] h-[26px] rounded-full text-white text-[11px] font-bold flex items-center justify-center shrink-0"
@@ -195,7 +207,7 @@ export default function TrailPlanner() {
               >
                 {i + 1}
               </div>
-              {i < activeTrip.days.length - 1 && (
+              {i < days.length - 1 && (
                 <div
                   className="flex-1 h-[2px]"
                   style={{
@@ -207,7 +219,7 @@ export default function TrailPlanner() {
             </div>
           ))}
           <span className="text-[12px] text-[#666] ml-2 whitespace-nowrap">
-            {activeTrip.days.length} days planned
+            {days.length} days planned
           </span>
         </div>
       )}
@@ -222,8 +234,8 @@ export default function TrailPlanner() {
               Your trail <div className="flex-1 h-px bg-[#1C3A2E]/15"></div>
             </div>
 
-            {activeTrip.days && activeTrip.days.length > 0 ? (
-              <TrailMap days={activeTrip.days} onAddDay={handleAddDay} onAddStop={handleAddStop} />
+            {days.length > 0 ? (
+              <TrailMap days={days} onAddDay={handleAddDay} onAddStop={handleAddStop} />
             ) : (
               <div className="border-2 border-dashed border-[#1C3A2E]/10 rounded-2xl p-12 text-center">
                 <p className="text-[14px] font-medium text-[#666] mb-4">Your trail is completely empty.</p>
@@ -233,7 +245,7 @@ export default function TrailPlanner() {
               </div>
             )}
 
-            <SavedStrip days={activeTrip.days || []} onStopAdded={() => loadTripDetails(activeTrip.id)} />
+            <SavedStrip days={days} onStopAdded={() => loadTripDetails(activeTrip.id)} />
           </div>
 
           {/* Sidebar: Dynamic Field Notes */}

@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import rough from 'roughjs';
+import { useState } from 'react';
 import type { ItineraryDay } from '../../api/itineraries';
 
 interface TrailMapProps {
@@ -9,10 +8,6 @@ interface TrailMapProps {
 }
 
 export default function TrailMap({ days, onAddDay, onAddStop }: TrailMapProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const stubRefs = useRef<(HTMLDivElement | null)[]>([]);
-
   // Inline Form States
   const [addingDay, setAddingDay] = useState(false);
   const [newDayPlace, setNewDayPlace] = useState('');
@@ -29,7 +24,6 @@ export default function TrailMap({ days, onAddDay, onAddStop }: TrailMapProps) {
     setAddingDay(false);
     setNewDayPlace('');
     setNewDayDate('');
-    setNewDayRegion('mainland');
   };
 
   const handleStopSubmit = async (dayId: string) => {
@@ -40,177 +34,166 @@ export default function TrailMap({ days, onAddDay, onAddStop }: TrailMapProps) {
     setNewStopTime('');
   };
 
-  // rough.js drawing logic
-  useEffect(() => {
-    if (!svgRef.current || !containerRef.current || days.length === 0) return;
-
-    const svg = svgRef.current;
-    const container = containerRef.current;
-
-    // Clear previous drawing
-    while (svg.firstChild) {
-      svg.removeChild(svg.firstChild);
-    }
-
-    const wrapRect = container.getBoundingClientRect();
-    svg.setAttribute('width', wrapRect.width.toString());
-    svg.setAttribute('height', wrapRect.height.toString());
-
-    const rc = rough.svg(svg);
-    const roadY = 40;
-    const points: number[] = [];
-
-    // Calculate center X for each stamp
-    stubRefs.current.forEach((stub) => {
-      if (stub) {
-        const stamp = stub.querySelector('.stamp');
-        if (stamp) {
-          const r = stamp.getBoundingClientRect();
-          const x = r.left - wrapRect.left + r.width / 2;
-          points.push(x);
-        }
-      }
-    });
-
-    if (points.length > 0) {
-      // Draw main trail line
-      const roadPath = `M${points[0]},${roadY} ` + points.slice(1).map(x => `L${x},${roadY}`).join(' ');
-
-      svg.appendChild(rc.path(roadPath, { stroke: '#B98953', strokeWidth: 9, roughness: 1.8, bowing: 2 }));
-      svg.appendChild(rc.path(roadPath, { stroke: '#D4A853', strokeWidth: 1.5, strokeLineDash: [6, 7], roughness: 1.2 }));
-
-      // Draw connection lines and dots
-      stubRefs.current.forEach((stub, index) => {
-        if (stub) {
-          const stamp = stub.querySelector('.stamp');
-          if (stamp) {
-            const r = stamp.getBoundingClientRect();
-            const x = points[index];
-            const stampY = r.top - wrapRect.top + r.height / 2;
-
-            svg.appendChild(rc.line(x, roadY, x, stampY, { stroke: '#C4522A', strokeWidth: 1.5, roughness: 1.4 }));
-            svg.appendChild(rc.circle(x, roadY, 8, { fill: '#C4522A', fillStyle: 'solid', stroke: '#C4522A', roughness: 1.6 }));
-          }
-        }
-      });
-    }
-  }, [days, addingDay, addingStopFor]);
-
   return (
-    <div className="relative overflow-x-auto pb-8" ref={containerRef}>
-      <svg className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none" ref={svgRef}></svg>
+    <div className="w-full max-w-5xl mx-auto px-4 py-8 overflow-x-auto bg-[#FAF8F4]">
+      
+      {/* Horizontal Route Track Wrapper */}
+      <div className="flex gap-6 items-start min-w-max pt-16 pb-8 px-4 relative">
+        
+        {/* Simple Simulated Road Line (Dotted Hand-Drawn Travel Aesthetic) */}
+        <div className="absolute top-[48px] left-28 right-28 h-[2px] border-t-2 border-dashed border-[#B98953]/60 pointer-events-none z-0" />
 
-      <div className="flex gap-[26px] relative z-10 min-w-[760px] pt-[74px]">
+        {/* Days Horizontal Stack */}
         {days.map((day, index) => {
           const isCoast = day.region === 'coast';
-          const yOffset = index % 2 === 0 ? 'translate-y-2.5' : '-translate-y-2.5';
-
+          
           return (
-            <div
-              key={day.id}
-              ref={(el) => { stubRefs.current[index] = el; }}
-              className={`flex-none w-[208px] bg-white rounded-2xl shadow-sm ${yOffset}`}
+            <div 
+              key={day.id} 
+              className={`w-[220px] bg-white rounded-2xl shadow-md border border-[#1C3A2E]/10 flex-shrink-0 relative transition-transform duration-200 hover:-translate-y-1 z-10
+                ${index % 2 === 0 ? 'translate-y-2' : '-translate-y-2'}`}
             >
-              <div className={`p-4 relative rounded-t-2xl ${isCoast ? 'bg-[#1E4B65]' : 'bg-[#1C3A2E]'}`}>
-                <div className="stamp w-[46px] h-[46px] rounded-full border-2 border-dashed border-white/70 flex flex-col items-center justify-center mx-auto mb-2.5 -rotate-6">
-                  <span className="font-serif text-[19px] text-white leading-none">{index + 1}</span>
-                  <span className="text-[8px] tracking-widest text-white/75 uppercase">day</span>
+              
+              {/* Ticket Header Stub Section */}
+              <div 
+                className={`p-4 text-center rounded-t-2xl relative text-white`}
+                style={{ backgroundColor: isCoast ? '#1E4B65' : '#1C3A2E' }}
+              >
+                {/* Vertical Connector Pin Line to the Road */}
+                <div className={`absolute left-1/2 -translate-x-1/2 w-[1.5px] h-12 border-l border-dashed border-[#C4522A] ${index % 2 === 0 ? '-top-12' : '-top-[60px]'}`}>
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-[#C4522A]" />
                 </div>
-                <p className="font-serif text-[18px] text-white text-center mb-0.5">{day.place}</p>
-                <p className="text-[10.5px] text-white/70 text-center m-0">{new Date(day.date).toLocaleDateString()}</p>
+
+                {/* Travel Passport Stamp Badge */}
+                <div className="w-[48px] h-[48px] rounded-full border-2 border-dashed border-white/70 flex flex-col items-center justify-center mx-auto mb-2 -rotate-6 select-none">
+                  <span className="font-serif text-[18px] font-bold text-white leading-none">{index + 1}</span>
+                  <span className="text-[7px] tracking-wider text-white/80 uppercase font-mono">Day</span>
+                </div>
+
+                <h3 className="font-serif text-[18px] font-medium tracking-wide text-white truncate px-1">{day.place}</h3>
+                <p className="text-[10.5px] text-white/70 font-mono mt-0.5">
+                  {new Date(day.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                </p>
               </div>
 
-              <div className="relative h-px mx-3.5 border-t-[1.5px] border-dashed border-[#1C3A2E]/30"></div>
+              {/* Ticket Perforation Tear Simulation Effect */}
+              <div className="relative h-[2px] mx-3.5 border-t-[1.5px] dashed border-[#1C3A2E]/20 my-0">
+                <div className="absolute -left-[23px] -top-[10px] w-[18px] h-[18px] rounded-full bg-[#FAF8F4]" />
+                <div className="absolute -right-[23px] -top-[10px] w-[18px] h-[18px] rounded-full bg-[#FAF8F4]" />
+              </div>
 
-              <div className="p-4">
-                <span className="inline-flex items-center gap-1.5 text-[11px] text-[#2D5A3D] bg-[#EDE3D0] rounded-full px-2.5 py-1 mb-3 font-semibold">
+              {/* Ticket Body Content Section */}
+              <div className="p-4 bg-white rounded-b-2xl">
+                
+                {/* Weather Stamp Badge */}
+                <div className="inline-block bg-[#EDE3D0] text-[#2D5A3D] text-[11px] font-semibold px-2.5 py-0.5 rounded-full mb-3">
                   {day.weather || '☀ Weather TBD'}
-                </span>
+                </div>
 
-                {day.stops?.map((stop) => (
-                  <div key={stop.id} className="flex items-center gap-2 py-1.5 text-[13px] border-b border-[#1C3A2E]/5 last:border-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#D4A853] shrink-0"></span>
-                    <span className="flex-1 font-medium">{stop.name}</span>
-                    <span className="text-[10.5px] text-[#666]">{stop.timeLabel}</span>
-                  </div>
-                ))}
+                {/* Day Stops Content Layout List */}
+                <div className="flex flex-col gap-1.5 border-b border-[#1C3A2E]/5 pb-3 mb-3">
+                  {day.stops && day.stops.length > 0 ? (
+                    day.stops.map((stop) => (
+                      <div key={stop.id} className="flex items-start justify-between text-[12.5px] py-1 border-b border-dashed border-[#1C3A2E]/5 last:border-none">
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0 pr-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#D4A853] shrink-0" />
+                          <span className="font-medium text-[#1a1a1a] truncate">{stop.name}</span>
+                        </div>
+                        <span className="text-[10.5px] font-mono text-[#666] shrink-0 whitespace-nowrap bg-[#FAF8F4] px-1 rounded">
+                          {stop.timeLabel || 'Flexible'}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-[11px] text-[#888] italic py-1">No stops stamped yet.</p>
+                  )}
+                </div>
 
+                {/* Dynamic Inline Route Stop Action Blocks */}
                 {addingStopFor === day.id ? (
-                  <div className="mt-3 flex flex-col gap-2">
+                  <div className="p-2.5 bg-[#FAF8F4] border border-[#1C3A2E]/10 rounded-xl flex flex-col gap-2">
                     <input
                       type="text"
-                      placeholder="Stop name"
+                      placeholder="Stop name..."
                       value={newStopName}
                       onChange={(e) => setNewStopName(e.target.value)}
-                      className="w-full border-b border-[#1C3A2E]/20 text-[12px] bg-transparent focus:outline-none"
+                      className="w-full bg-white border border-[#1C3A2E]/15 rounded-md px-2 py-1 text-[12px] focus:outline-none focus:border-[#C4522A]"
                     />
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5 items-center">
                       <input
                         type="text"
-                        placeholder="Time (e.g. 9am)"
+                        placeholder="Time..."
                         value={newStopTime}
                         onChange={(e) => setNewStopTime(e.target.value)}
-                        className="w-full border-b border-[#1C3A2E]/20 text-[12px] bg-transparent focus:outline-none"
+                        className="flex-1 bg-white border border-[#1C3A2E]/15 rounded-md px-2 py-1 text-[12px] focus:outline-none focus:border-[#C4522A]"
                       />
-                      <button onClick={() => handleStopSubmit(day.id)} className="text-[11px] font-bold text-[#C4522A]">Save</button>
+                      <button onClick={() => setAddingStopFor(null)} className="text-[10.5px] text-[#666]">X</button>
+                      <button onClick={() => handleStopSubmit(day.id)} className="bg-[#C4522A] text-white text-[10.5px] font-bold px-2 py-1 rounded-md">Add</button>
                     </div>
                   </div>
                 ) : (
                   <button
                     onClick={() => setAddingStopFor(day.id)}
-                    className="w-full mt-2.5 border border-dashed border-[#1C3A2E]/25 bg-transparent rounded-[9px] p-2 text-[11.5px] text-[#2D5A3D] font-bold hover:bg-white hover:border-[#2D5A3D] transition-colors"
+                    className="w-full border border-dashed border-[#2D5A3D]/30 bg-transparent rounded-lg py-1.5 text-[11.5px] text-[#2D5A3D] font-bold hover:bg-[#FAF8F4] transition-colors"
                   >
                     + Add a stop
                   </button>
                 )}
               </div>
+
             </div>
           );
         })}
 
-        <div className="flex-none w-[180px]">
+        {/* Append New Day Ticket Button/Form */}
+        <div className="w-[200px] flex-shrink-0 self-stretch flex items-center">
           {addingDay ? (
-             <div className="bg-white p-4 rounded-2xl shadow-sm border-[1.5px] border-[#1C3A2E]/20 flex flex-col gap-3">
+             <div className="w-full bg-white p-4 rounded-2xl shadow-md border border-[#1C3A2E]/15 flex flex-col gap-2.5">
                <input
                  type="text"
-                 placeholder="Where to?"
+                 placeholder="Destination Region?"
                  value={newDayPlace}
                  onChange={(e) => setNewDayPlace(e.target.value)}
-                 className="w-full border-b border-[#1C3A2E]/20 text-[13px] bg-transparent focus:outline-none"
+                 className="w-full border border-[#1C3A2E]/15 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-[#C4522A]"
                />
                <input
                  type="date"
                  value={newDayDate}
                  onChange={(e) => setNewDayDate(e.target.value)}
-                 className="w-full border-b border-[#1C3A2E]/20 text-[13px] bg-transparent focus:outline-none"
+                 className="w-full border border-[#1C3A2E]/15 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-[#C4522A]"
                />
-               <div className="flex gap-1.5">
+               <div className="flex gap-1">
                  <button
                    type="button"
                    onClick={() => setNewDayRegion('mainland')}
-                   className={`flex-1 rounded-md py-1 text-[11px] font-bold border ${newDayRegion === 'mainland' ? 'bg-[#2D5A3D] text-white border-[#2D5A3D]' : 'border-[#1C3A2E]/20 text-[#2D5A3D]'}`}
+                   className={`flex-1 rounded-md py-1 text-[10px] font-bold border transition-colors ${newDayRegion === 'mainland' ? 'bg-[#2D5A3D] text-white border-[#2D5A3D]' : 'bg-transparent border-[#1C3A2E]/10 text-[#2D5A3D]'}`}
                  >
                    Mainland
                  </button>
                  <button
                    type="button"
                    onClick={() => setNewDayRegion('coast')}
-                   className={`flex-1 rounded-md py-1 text-[11px] font-bold border ${newDayRegion === 'coast' ? 'bg-[#1E4B65] text-white border-[#1E4B65]' : 'border-[#1C3A2E]/20 text-[#1E4B65]'}`}
+                   className={`flex-1 rounded-md py-1 text-[10px] font-bold border transition-colors ${newDayRegion === 'coast' ? 'bg-[#1E4B65] text-white border-[#1E4B65]' : 'bg-transparent border-[#1C3A2E]/10 text-[#1E4B65]'}`}
                  >
                    Coast
                  </button>
                </div>
-               <button onClick={handleDaySubmit} className="bg-[#1C3A2E] text-white rounded-lg py-1.5 text-[12px] font-bold">Add</button>
+               <div className="flex justify-end gap-1.5 mt-1">
+                 <button onClick={() => setAddingDay(false)} className="text-[11px] text-[#666] px-1 py-0.5">Cancel</button>
+                 <button onClick={handleDaySubmit} className="bg-[#C4522A] text-white rounded-md px-2.5 py-1 text-[11px] font-bold">Stamp</button>
+               </div>
              </div>
           ) : (
-            <div
+            <button
               onClick={() => setAddingDay(true)}
-              className="w-full h-full flex items-center justify-center border-2 border-dashed border-[#1C3A2E]/20 rounded-2xl text-[#2D5A3D] text-[13px] font-bold cursor-pointer min-h-[200px] hover:bg-white transition-colors"
+              className="w-full min-h-[220px] border-2 border-dashed border-[#2D5A3D]/20 rounded-2xl bg-white/40 text-[#2D5A3D] text-[13px] font-bold hover:bg-white hover:border-[#C4522A]/40 hover:text-[#C4522A] transition-all flex flex-col items-center justify-center p-4 text-center gap-1"
             >
-              + Add day {days.length + 1}
-            </div>
+              <span className="text-xl">+</span>
+              <span>Add Day {days.length + 1}</span>
+            </button>
           )}
         </div>
+
       </div>
     </div>
   );

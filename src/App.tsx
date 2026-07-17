@@ -5,6 +5,7 @@ import CustomCursor from './components/CustomCursor';
 import { useAuthStore } from './store/useAuthStore';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import LoadingState from './components/ui/LoadingState';
 
 // ── Public (eager) ────────────────────────────────────────────────────────────
 import Home from './pages/public/Home';
@@ -30,8 +31,11 @@ const AdminDestinations = lazy(() => import('./pages/admin/AdminDestinations'));
 const TrailPlanner       = lazy(() => import('./pages/traveler/TrailPlanner'));
 // ── Shared ─────────────────────────────────────────────────────────────────────
 const PageLoader = () => (
-  <div className="h-screen w-full flex items-center justify-center bg-[#faf8f4]">
-    <div className="w-6 h-6 border-2 border-[#D4A853] border-t-transparent rounded-full animate-spin" />
+  <div className="min-h-screen w-full flex items-center justify-center bg-[#faf8f4] px-4 py-10">
+    <LoadingState
+      message="Preparing your journey..."
+      submessage="We’re loading your route and travel details."
+    />
   </div>
 );
 
