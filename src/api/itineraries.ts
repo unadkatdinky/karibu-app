@@ -26,6 +26,8 @@ export interface Itinerary {
   userId: string;
   name: string;
   startDate: string;
+  endDate?: string;
+  coverImageUrl?: string;
   travelers: number;
   budget: number;
   season: string;
@@ -36,6 +38,8 @@ export interface Itinerary {
 export interface CreateItineraryInput {
   name: string;
   startDate: string;
+  endDate?: string;
+  coverImageUrl?: string;
   travelers: number;
   budget: number;
 }
@@ -87,3 +91,11 @@ export async function addItineraryStop(dayId: string, data: AddStopInput): Promi
 export async function generateItinerarySuggestions(id: string): Promise<void> {
   await api.post(`/itineraries/${id}/suggest`);
 }
+
+export async function deleteItineraryDay(dayId: string): Promise<void> {
+  await api.delete(`/itineraries/days/${dayId}`);
+}
+
+export async function deleteItineraryStop(stopId: string): Promise<void> {
+  await api.delete(`/itineraries/stops/${stopId}`);
+}

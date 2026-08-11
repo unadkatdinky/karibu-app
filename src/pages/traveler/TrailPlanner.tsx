@@ -5,13 +5,18 @@ import {
   createItinerary,
   addItineraryDay,
   addItineraryStop,
+  deleteItineraryDay,
+  deleteItineraryStop,
   type Itinerary,
   generateItinerarySuggestions,
 } from '../../api/itineraries';
-import TrailMap from '../../components/planner/TrailMap';
+import DayTimeline from '../../components/planner/DayTimeline';
 import PermitCard from '../../components/planner/PermitCard';
 import SavedStrip from '../../components/planner/SavedStrip';
-import LoadingState from '../../components/ui/LoadingState';
+import ExchangeMeter from '../../components/planner/ExchangeMeter';
+import BeadDivider from '../../components/planner/BeadDivider';
+import Loader from '../../components/common/Loader';
+import { Plus } from 'lucide-react';
 
 export default function TrailPlanner() {
   const [trips, setTrips] = useState<Itinerary[]>([]);
@@ -26,12 +31,12 @@ export default function TrailPlanner() {
   useEffect(() => {
     fetchItineraries()
       .then((data) => {
-        const trips = data || [];
-        setTrips(trips);
-        if (trips.length > 0) {
-          loadTripDetails(trips[0].id);
+        const tripsList = data || [];
+        setTrips(tripsList);
+        if (tripsList.length > 0) {
+          loadTripDetails(tripsList[0].id);
         } else {
-          setIsCreating(true); // If they have no trips, default to the creation screen
+          setIsCreating(true);
           setLoading(false);
         }
       })
@@ -45,7 +50,7 @@ export default function TrailPlanner() {
   // 2. Fetch full details (days & stops)
   const loadTripDetails = async (id: string) => {
     setLoading(true);
-    setIsCreating(false); // Hide the permit card
+    setIsCreating(false);
     try {
       const fullTrip = await fetchItineraryById(id);
       setActiveTrip(fullTrip);
@@ -58,26 +63,15 @@ export default function TrailPlanner() {
 
   // 3. Handle Permit Submission
   const handleCreateTrip = async (data: { name: string; startDate: string; travelers: number; budget: number }) => {
-    setLoading(true); // Put the entire screen into global loading mode immediately
     setCreateLoading(true);
-    setIsCreating(false);
     try {
-      // 1. Create the base entry record
       const newTrip = await createItinerary(data);
-
-      // 2. Await the complete generation engine execution
       await generateItinerarySuggestions(newTrip.id);
-
-      // 3. Update top-level trips index silently
-      const refreshedTrips = await fetchItineraries();
-      setTrips(refreshedTrips || []);
-
-      // 4. Load the fully populated trip artifact directly
+      const freshTrips = await fetchItineraries();
+      setTrips(freshTrips || []);
       await loadTripDetails(newTrip.id);
     } catch (err) {
-      console.error("Failed to map pipeline trip generation:", err);
-      setIsCreating(true); // Return fallback layout context
-      setLoading(false);
+      console.error('Failed to create trip:', err);
     } finally {
       setCreateLoading(false);
     }
@@ -96,17 +90,38 @@ export default function TrailPlanner() {
   };
 
   // 5. Add a stop to a specific day, then refresh
-  const handleAddStop = async (dayId: string, name: string, timeLabel: string) => {
+  const handleAddStop = async (dayId: string, name: string, timeLabel: string, category?: string, cost?: number) => {
     if (!activeTrip) return;
-    await addItineraryStop(dayId, { name, timeLabel });
+    await addItineraryStop(dayId, { name, timeLabel, category, cost });
     await loadTripDetails(activeTrip.id);
   };
 
-  // 6. Budget breakdown, computed from actual stop costs (not a placeholder bar)
-  const days = activeTrip?.days ?? [];
+  // 6. Delete day
+  const handleDeleteDay = async (dayId: string) => {
+    if (!activeTrip) return;
+    try {
+      await deleteItineraryDay(dayId);
+      await loadTripDetails(activeTrip.id);
+    } catch (err) {
+      console.error('Failed to delete day:', err);
+    }
+  };
+
+  // 7. Delete stop
+  const handleDeleteStop = async (stopId: string) => {
+    if (!activeTrip) return;
+    try {
+      await deleteItineraryStop(stopId);
+      await loadTripDetails(activeTrip.id);
+    } catch (err) {
+      console.error('Failed to delete stop:', err);
+    }
+  };
+
+  // 8. Budget breakdown computed from actual stop costs
   const budgetBreakdown = (() => {
     const totals: Record<string, number> = {};
-    days.forEach((day) => {
+    activeTrip?.days?.forEach((day) => {
       day.stops?.forEach((stop) => {
         totals[stop.category || 'Other'] = (totals[stop.category || 'Other'] || 0) + (stop.cost || 0);
       });
@@ -117,205 +132,232 @@ export default function TrailPlanner() {
 
   if (loading && !activeTrip && !isCreating) {
     return (
-      <div className="flex justify-center items-center min-h-[420px] px-4 py-10">
-        <LoadingState
-          message="Crafting your itinerary..."
-          submessage="The AI is mapping routes, seasons, and stops for your journey."
-        />
+      <div className="flex justify-center items-center h-64">
+        <Loader />
       </div>
     );
   }
 
   return (
-    <div className="pb-12 max-w-[1200px] mx-auto">
+    <div className="pb-12 max-w-[1100px] mx-auto px-4 md:px-6">
       {/* Header */}
-      <p className="text-[11px] uppercase tracking-[0.22em] font-bold text-[#D4A853] mb-3">
-        Plan your journey
-      </p>
-      <h1 className="font-serif text-[42px] md:text-[56px] text-[#1C3A2E] leading-tight mb-4">
-        Build your East Africa trail
-      </h1>
-      <p className="text-[15px] text-[#666] leading-relaxed max-w-[520px] mb-8">
-        Pull in the places you've saved, borrow a route from a local guide, or start blank.
-        We'll stamp in the season, the weather, and what to pack as you go.
-      </p>
-
-      {/* Trip Switcher Strip */}
-      <div className="flex items-center gap-2.5 overflow-x-auto pb-2 mb-6">
-        {trips.map((trip) => (
-          <button
-            key={trip.id}
-            onClick={() => loadTripDetails(trip.id)}
-            className={`flex-none flex flex-col gap-1.5 bg-white border-[1.5px] rounded-xl px-4 py-2.5 text-left min-w-[150px] transition-all ${
-              activeTrip?.id === trip.id && !isCreating
-                ? 'border-[#C4522A] ring-2 ring-[#C4522A]/10 shadow-sm'
-                : 'border-[#1C3A2E]/10 hover:border-[#1C3A2E]/30'
-            }`}
-          >
-            <span className="text-[12.5px] font-bold text-[#1C3A2E] truncate w-full">
-              {trip.name}
-            </span>
-            <span className="text-[10.5px] text-[#666] flex justify-between gap-2">
-              <span>{trip.days?.length || 0} days</span>
-              <span className="flex gap-[3px]">
-                {Array.from(new Set(trip.days?.map((d) => d.region))).map((region) => (
-                  <i
-                    key={region}
-                    className="w-[14px] h-[4px] rounded-sm inline-block"
-                    style={{ background: region === 'coast' ? '#1E4B65' : '#2D5A3D' }}
-                  />
-                ))}
-              </span>
-            </span>
-          </button>
-        ))}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
+        <div>
+          <p className="text-[10px] font-mono tracking-widest text-[#C4522A] uppercase font-bold mb-1">
+            Karibu Tours · Expeditions
+          </p>
+          <h1 className="font-serif text-[30px] md:text-[36px] text-[#1C3A2E] font-semibold leading-tight m-0">
+            Build your East Africa trail
+          </h1>
+          <p className="text-[14px] text-[#666] leading-relaxed max-w-[540px] mt-1.5 m-0">
+            Pull in saved places, borrow local guide routes, or stamp in custom stops.
+            Season, weather, and packing notes adapt as you plan.
+          </p>
+        </div>
         <button
           onClick={() => { setActiveTrip(null); setIsCreating(true); }}
-          className={`flex-none flex items-center justify-center min-w-[96px] h-[58px] border-[1.5px] border-dashed rounded-xl text-[12.5px] font-bold transition-all ${
-            isCreating
-              ? 'border-[#2D5A3D] bg-white text-[#2D5A3D]'
-              : 'border-[#1C3A2E]/25 text-[#2D5A3D] hover:bg-white hover:border-[#2D5A3D]'
-          }`}
+          disabled={createLoading}
+          className="flex items-center gap-1.5 bg-[#1C3A2E] text-white rounded-xl px-4 py-2.5 text-[13px] font-bold hover:bg-[#152e24] transition-colors shrink-0 self-start md:self-auto"
         >
-          + New
+          <Plus size={15} /> New trip
         </button>
       </div>
 
-      {/* Legend */}
-      <div className="flex gap-5 mb-5">
-        <span className="inline-flex items-center gap-1.5 text-[12px] text-[#666] font-medium">
-          <i className="w-[9px] h-[9px] rounded-full inline-block bg-[#2D5A3D]" /> Mainland
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-[12px] text-[#666] font-medium">
-          <i className="w-[9px] h-[9px] rounded-full inline-block bg-[#1E4B65]" /> Coast
-        </span>
-      </div>
+      <BeadDivider />
+
+      {/* Trip Switcher Cards */}
+      {trips.length > 0 && (
+        <div className="flex items-center gap-3 overflow-x-auto pb-3 mb-6">
+          {trips.map((trip, i) => (
+            <button
+              key={trip.id}
+              onClick={() => loadTripDetails(trip.id)}
+              className={`karibu-card flex-none flex flex-col justify-between bg-white border-[1.5px] rounded-2xl p-3.5 text-left w-[180px] h-[100px] relative overflow-hidden ${
+                activeTrip?.id === trip.id && !isCreating
+                  ? 'border-[#C4522A] ring-2 ring-[#C4522A]/15 shadow-sm'
+                  : 'border-[#1C3A2E]/12 hover:border-[#1C3A2E]/30'
+              }`}
+              style={{ animationDelay: `${i * 50}ms` }}
+            >
+              <div>
+                <span className="text-[12.5px] font-bold text-[#1C3A2E] truncate block w-full leading-snug">
+                  {trip.name}
+                </span>
+                <span className="text-[10.5px] text-[#666] font-mono block mt-0.5">
+                  {trip.days?.length || 0} day{(trip.days?.length || 0) === 1 ? '' : 's'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#1C3A2E]/8">
+                <span className="text-[10px] font-mono text-[#C4522A] font-bold uppercase">
+                  {trip.travelers} traveler{trip.travelers === 1 ? '' : 's'}
+                </span>
+                <span className="w-5 h-5 rounded-full bg-[#1C3A2E]/5 border border-dashed border-[#C4522A] text-[9px] font-serif font-bold text-[#C4522A] flex items-center justify-center">
+                  {trip.travelers}p
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* View: Creating a New Trip */}
       {isCreating && (
-        <PermitCard onCreate={handleCreateTrip} loading={createLoading} />
-      )}
-
-      {/* Overview strip */}
-      {activeTrip && !isCreating && activeTrip.days && activeTrip.days.length > 0 && (
-        <div className="flex items-center gap-2.5 mt-8 mb-1.5">
-          {days.map((day, i) => (
-            <div key={day.id} className="flex items-center gap-2.5 flex-1 last:flex-none">
-              <div
-                className="w-[26px] h-[26px] rounded-full text-white text-[11px] font-bold flex items-center justify-center shrink-0"
-                style={{ background: day.region === 'coast' ? '#1E4B65' : '#2D5A3D' }}
-              >
-                {i + 1}
-              </div>
-              {i < days.length - 1 && (
-                <div
-                  className="flex-1 h-[2px]"
-                  style={{
-                    backgroundImage:
-                      'repeating-linear-gradient(90deg, rgba(28,58,46,.25) 0 6px, transparent 6px 11px)',
-                  }}
-                />
-              )}
-            </div>
-          ))}
-          <span className="text-[12px] text-[#666] ml-2 whitespace-nowrap">
-            {days.length} days planned
-          </span>
-        </div>
+        createLoading ? (
+          <div className="bg-white border border-[#1C3A2E]/10 rounded-[18px] shadow-sm py-16 flex items-center justify-center mb-8">
+            <Loader />
+          </div>
+        ) : (
+          <PermitCard onCreate={handleCreateTrip} loading={createLoading} />
+        )
       )}
 
       {/* View: Active Trip Loaded */}
       {activeTrip && !isCreating && (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-10 items-start mt-8">
-
-          {/* Main Content Area: Map & Saved Places */}
-          <div className="overflow-hidden">
-            <div className="flex items-center gap-2.5 text-[11px] uppercase tracking-[0.18em] text-[#1C3A2E] font-bold mb-4">
-              Your trail <div className="flex-1 h-px bg-[#1C3A2E]/15"></div>
+        <>
+          {/* Active Trip Hero Banner */}
+          <div
+            className="rounded-2xl p-6 md:p-7 mb-6 border border-[#1C3A2E]/10 relative overflow-hidden shadow-sm karibu-fade-up"
+            style={{
+              background: 'linear-gradient(120deg, #F5EDD8 0%, #FAF8F4 70%)',
+            }}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-5 relative z-10">
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-widest font-bold text-[#C4522A] mb-1">
+                  Active Trail // {activeTrip.days?.length || 0} Day{(activeTrip.days?.length || 0) === 1 ? '' : 's'}
+                </p>
+                <h2 className="font-serif text-[24px] md:text-[28px] text-[#1C3A2E] font-semibold m-0">
+                  {activeTrip.name}
+                </h2>
+              </div>
+              <div className="flex gap-2.5 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 bg-white text-[#C4522A] text-[12px] font-bold px-3 py-1.5 rounded-full border border-[#1C3A2E]/8 shadow-2xs">
+                  ☀ {activeTrip.season || 'Season TBD'}
+                </span>
+                <span className="inline-flex items-center gap-1.5 bg-white text-[#1C3A2E] text-[12px] font-bold px-3 py-1.5 rounded-full border border-[#1C3A2E]/8 shadow-2xs">
+                  {activeTrip.travelers} traveler{activeTrip.travelers === 1 ? '' : 's'}
+                </span>
+                <span className="inline-flex items-center gap-1.5 bg-white text-[#1C3A2E] text-[12px] font-bold px-3 py-1.5 rounded-full border border-[#1C3A2E]/8 shadow-2xs">
+                  ${activeTrip.budget.toLocaleString()} / person
+                </span>
+              </div>
             </div>
-
-            {days.length > 0 ? (
-              <TrailMap days={days} onAddDay={handleAddDay} onAddStop={handleAddStop} />
-            ) : (
-              <div className="border-2 border-dashed border-[#1C3A2E]/10 rounded-2xl p-12 text-center">
-                <p className="text-[14px] font-medium text-[#666] mb-4">Your trail is completely empty.</p>
-                <button className="bg-[#1C3A2E] text-[#F5EDD8] px-5 py-2.5 rounded-[10px] text-[13px] font-semibold">
-                  + Add your first day
-                </button>
+            {activeTrip.days && activeTrip.days.length > 0 && (
+              <div className="flex gap-1.5 mt-4 relative z-10">
+                {activeTrip.days.map((day) => (
+                  <span
+                    key={day.id}
+                    className="flex-1 h-1.5 rounded-full"
+                    style={{ background: day.region === 'coast' ? '#1E4B65' : '#2D5A3D' }}
+                    title={day.place}
+                  />
+                ))}
               </div>
             )}
-
-            <SavedStrip days={days} onStopAdded={() => loadTripDetails(activeTrip.id)} />
           </div>
 
-          {/* Sidebar: Dynamic Field Notes */}
-          <div className="flex flex-col gap-5">
-             <div className="flex items-center gap-2.5 text-[11px] uppercase tracking-[0.18em] text-[#1C3A2E] font-bold mb-1">
-              Field notes <div className="flex-1 h-px bg-[#1C3A2E]/15"></div>
-            </div>
+          {/* Interactive Exchange Meter Widget */}
+          <ExchangeMeter
+            spent={budgetBreakdown.spent}
+            budget={activeTrip.budget}
+            travelers={activeTrip.travelers}
+          />
 
-            <div className="bg-white rounded-2xl rounded-tl-sm p-5 relative shadow-sm border border-[#1C3A2E]/5">
-              <div className="absolute -top-2.5 left-5 w-[58px] h-5 bg-[#F5EDD8] opacity-90 -rotate-3 shadow-sm border border-[#1C3A2E]/10"></div>
+          <BeadDivider />
 
-              <p className="font-serif text-[18px] text-[#1C3A2E] mt-1 mb-1">Best time to go</p>
-              <p className="text-[12.5px] text-[#666] italic mb-3 leading-relaxed">
-                {activeTrip.seasonNote || 'Generating season insights based on your route...'}
-              </p>
+          {/* Main Layout: Timeline & Sidebar */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_310px] gap-8 items-start">
+            {/* Timeline & Saved Strip */}
+            <div className="overflow-hidden">
+              <div className="flex items-center gap-2.5 text-[11px] uppercase tracking-[0.18em] text-[#1C3A2E] font-bold mb-5">
+                Your Trail Itinerary <div className="flex-1 h-px bg-[#1C3A2E]/15"></div>
+              </div>
 
-              <span className="inline-flex items-center gap-1.5 bg-[#F5EDD8] text-[#C4522A] text-[12px] font-bold px-3 py-1.5 rounded-full">
-                ☀ {activeTrip.season || 'TBD'}
-              </span>
-            </div>
-
-            <div className="bg-white rounded-2xl rounded-tl-sm p-5 relative shadow-sm border border-[#1C3A2E]/5">
-              <div className="absolute -top-2.5 left-5 w-[58px] h-5 bg-[#F5EDD8] opacity-90 -rotate-3 shadow-sm border border-[#1C3A2E]/10"></div>
-
-              <p className="font-serif text-[18px] text-[#1C3A2E] mt-1 mb-1">Budget tracker</p>
-              <p className="text-[12.5px] text-[#666] italic mb-3 leading-relaxed">
-                ${budgetBreakdown.spent.toLocaleString()} of your ${activeTrip.budget.toLocaleString()} per-person budget spent so far, based on what you've added.
-              </p>
-
-              <div className="h-[9px] rounded-full bg-[#EDE3D0] overflow-hidden mb-2.5">
-                <div
-                  className="h-full bg-gradient-to-r from-[#D4A853] to-[#C4522A] rounded-full"
-                  style={{
-                    width: `${activeTrip.budget > 0 ? Math.min(100, Math.round((budgetBreakdown.spent / activeTrip.budget) * 100)) : 0}%`,
-                  }}
+              {activeTrip.days && activeTrip.days.length > 0 ? (
+                <DayTimeline
+                  days={activeTrip.days}
+                  onAddDay={handleAddDay}
+                  onAddStop={handleAddStop}
+                  onDeleteDay={handleDeleteDay}
+                  onDeleteStop={handleDeleteStop}
                 />
-              </div>
-              <div className="flex justify-between text-[11px] text-[#666]">
-                {budgetBreakdown.entries.length > 0 ? (
-                  budgetBreakdown.entries.map(([category, amount]) => (
-                    <span key={category}>{category} ${amount.toLocaleString()}</span>
-                  ))
-                ) : (
-                  <span>No costs added yet</span>
-                )}
-              </div>
+              ) : (
+                <div className="border-2 border-dashed border-[#1C3A2E]/10 rounded-2xl p-12 text-center bg-white/60">
+                  <p className="text-[14px] font-medium text-[#666] mb-4">Your trail is currently empty.</p>
+                  <button
+                    onClick={() => handleAddDay('Arusha', new Date().toISOString().split('T')[0], 'mainland')}
+                    className="bg-[#1C3A2E] text-white px-5 py-2.5 rounded-[10px] text-[13px] font-semibold"
+                  >
+                    + Add your first day
+                  </button>
+                </div>
+              )}
+
+              <SavedStrip days={activeTrip.days || []} onStopAdded={() => loadTripDetails(activeTrip.id)} />
             </div>
 
-            <div className="bg-white rounded-2xl rounded-tl-sm p-5 relative shadow-sm border border-[#1C3A2E]/5">
-              <div className="absolute -top-2.5 left-5 w-[58px] h-5 bg-[#F5EDD8] opacity-90 -rotate-3 shadow-sm border border-[#1C3A2E]/10"></div>
+            {/* Sidebar: Field Notes & Checklist */}
+            <div className="flex flex-col gap-5">
+              <div className="flex items-center gap-2.5 text-[11px] uppercase tracking-[0.18em] text-[#1C3A2E] font-bold mb-1">
+                Field Notes <div className="flex-1 h-px bg-[#1C3A2E]/15"></div>
+              </div>
 
-              <p className="font-serif text-[18px] text-[#1C3A2E] mt-1 mb-1">Don't forget</p>
-              <p className="text-[12.5px] text-[#666] italic mb-3 leading-relaxed">
-                A few general essentials for East Africa — swap these for a packing list once you add one.
-              </p>
-              <ChecklistCard />
+              <div className="bg-white rounded-2xl rounded-tl-sm p-5 relative shadow-sm border border-[#1C3A2E]/8">
+                <div className="absolute -top-2.5 left-5 w-[58px] h-5 bg-[#F5EDD8] opacity-90 -rotate-3 shadow-xs border border-[#1C3A2E]/10"></div>
+                <p className="font-serif text-[17px] text-[#1C3A2E] mt-1 mb-1 font-semibold">Best time to go</p>
+                <p className="text-[13px] text-[#666] mb-3 leading-relaxed">
+                  {activeTrip.seasonNote || 'Generating season insights based on your route...'}
+                </p>
+                <span className="inline-flex items-center gap-1.5 bg-[#F5EDD8] text-[#C4522A] text-[12px] font-bold px-3 py-1.5 rounded-full">
+                  ☀ {activeTrip.season || 'TBD'}
+                </span>
+              </div>
+
+              <div className="bg-white rounded-2xl rounded-tl-sm p-5 relative shadow-sm border border-[#1C3A2E]/8">
+                <div className="absolute -top-2.5 left-5 w-[58px] h-5 bg-[#F5EDD8] opacity-90 -rotate-3 shadow-xs border border-[#1C3A2E]/10"></div>
+                <p className="font-serif text-[17px] text-[#1C3A2E] mt-1 mb-1 font-semibold">Budget breakdown</p>
+                <p className="text-[13px] text-[#666] mb-3 leading-relaxed">
+                  ${budgetBreakdown.spent.toLocaleString()} spent across {budgetBreakdown.entries.length} category entries.
+                </p>
+                <div className="flex flex-col gap-1.5 text-[12px] text-[#666] font-mono border-t border-[#1C3A2E]/8 pt-2.5">
+                  {budgetBreakdown.entries.length > 0 ? (
+                    budgetBreakdown.entries.map(([category, amount]) => (
+                      <div key={category} className="flex justify-between items-center">
+                        <span className="text-[#1a1a1a] font-sans">{category}</span>
+                        <span className="font-bold text-[#1C3A2E]">${amount.toLocaleString()}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <span>No cost items recorded yet</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl rounded-tl-sm p-5 relative shadow-sm border border-[#1C3A2E]/8">
+                <div className="absolute -top-2.5 left-5 w-[58px] h-5 bg-[#F5EDD8] opacity-90 -rotate-3 shadow-xs border border-[#1C3A2E]/10"></div>
+                <p className="font-serif text-[17px] text-[#1C3A2E] mt-1 mb-1 font-semibold">Don't forget</p>
+                <p className="text-[13px] text-[#666] mb-3 leading-relaxed">
+                  Key essential preparations for your trail.
+                </p>
+                <ChecklistCard />
+              </div>
             </div>
           </div>
-
-        </div>
+        </>
       )}
     </div>
   );
 }
 
-// Static packing checklist — presentational only, no backend model yet.
-// Swap this out once there's a real packing-list endpoint to persist checked state.
+// Static packing checklist component
 function ChecklistCard() {
   const [checked, setChecked] = useState<Record<string, boolean>>({ 'Yellow fever certificate': true });
-  const items = ['Yellow fever certificate', 'Reef-safe sunscreen', 'Modest cover-up for coastal towns', 'Cash for market bargaining'];
+  const items = [
+    'Yellow fever certificate',
+    'Reef-safe sunscreen',
+    'Modest cover-up for coastal towns',
+    'Cash for market bargaining',
+  ];
 
   return (
     <ul className="list-none m-0 p-0">
@@ -325,8 +367,13 @@ function ChecklistCard() {
           onClick={() => setChecked((prev) => ({ ...prev, [item]: !prev[item] }))}
           className="flex items-center gap-2.5 text-[13px] py-1.5 border-b border-[#1C3A2E]/5 last:border-0 cursor-pointer"
         >
-          <input type="checkbox" checked={!!checked[item]} readOnly className="accent-[#D4A853] w-[15px] h-[15px]" />
-          <span className={checked[item] ? 'line-through text-[#666]' : ''}>{item}</span>
+          <input
+            type="checkbox"
+            checked={!!checked[item]}
+            readOnly
+            className="accent-[#D4A853] w-[15px] h-[15px]"
+          />
+          <span className={checked[item] ? 'line-through text-[#666]' : 'text-[#1a1a1a]'}>{item}</span>
         </li>
       ))}
     </ul>

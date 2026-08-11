@@ -66,11 +66,11 @@ export default function TrailMap({ days, onAddDay, onAddStop }: TrailMapProps) {
 
                 {/* Travel Passport Stamp Badge */}
                 <div className="w-[48px] h-[48px] rounded-full border-2 border-dashed border-white/70 flex flex-col items-center justify-center mx-auto mb-2 -rotate-6 select-none">
-                  <span className="font-serif text-[18px] font-bold text-white leading-none">{index + 1}</span>
+                  <span className="font-serif text-[16px] font-bold text-white leading-none">{index + 1}</span>
                   <span className="text-[7px] tracking-wider text-white/80 uppercase font-mono">Day</span>
                 </div>
 
-                <h3 className="font-serif text-[18px] font-medium tracking-wide text-white truncate px-1">{day.place}</h3>
+                <h3 className="font-serif text-[16px] font-medium tracking-wide text-white truncate px-1">{day.place}</h3>
                 <p className="text-[10.5px] text-white/70 font-mono mt-0.5">
                   {new Date(day.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                 </p>

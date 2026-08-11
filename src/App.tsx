@@ -29,6 +29,9 @@ const GuideDashboard    = lazy(() => import('./pages/guide/GuideDashboard'));
 const CommunityTasks    = lazy(() => import('./pages/guide/CommunityTasks'));
 const AdminDestinations = lazy(() => import('./pages/admin/AdminDestinations'));
 const TrailPlanner       = lazy(() => import('./pages/traveler/TrailPlanner'));
+const TripsDashboard    = lazy(() => import('./pages/traveler/TripsDashboard'));
+const TripDetail        = lazy(() => import('./pages/traveler/TripDetail'));
+const NewTrip           = lazy(() => import('./pages/traveler/NewTrip'));
 // ── Shared ─────────────────────────────────────────────────────────────────────
 const PageLoader = () => (
   <div className="min-h-screen w-full flex items-center justify-center bg-[#faf8f4] px-4 py-10">
@@ -51,6 +54,7 @@ function RoleRedirect() {
   if (!user) return <Home />;
   if (user.role === 'Admin')      return <Navigate to="/admin"    replace />;
   if (user.role === 'LocalGuide') return <Navigate to="/guide"    replace />;
+  if (user.role === 'Traveler')   return <Navigate to="/trips"    replace />;
   return                                 <Navigate to="/traveler" replace />;
 }
 
@@ -94,10 +98,13 @@ export default function App() {
           {/* ── Traveler ────────────────────────────────────────────────── */}
           <Route element={<ProtectedRoute allowedRoles={['Traveler', 'Admin']} />}>
             <Route element={<DashboardLayout />}>
-              <Route path="/traveler"       element={<TravelerDashboard />} />
+              <Route path="/traveler"          element={<TravelerDashboard />} />
+              <Route path="/trips"             element={<TripsDashboard />} />
+              <Route path="/trips/new"         element={<NewTrip />} />
+              <Route path="/trips/:id"         element={<TripDetail />} />
               <Route path="/traveler/explore"          element={<ExploreDestinations />} />
               <Route path="/traveler/explore/:slug"    element={<DestinationDetail />} />
-              <Route path="/traveler/itinerary"        element={<TrailPlanner />} />
+              <Route path="/traveler/itinerary"        element={<Navigate to="/trips" replace />} />
               <Route path="/traveler/saved" element={<SavedPlaces />} />
             </Route>
           </Route>
