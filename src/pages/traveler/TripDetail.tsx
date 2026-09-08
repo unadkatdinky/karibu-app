@@ -7,6 +7,8 @@ import {
   addItineraryStop,
   deleteItineraryDay,
   deleteItineraryStop,
+  updateItineraryDay,
+  updateItineraryStop,
   type Itinerary,
 } from '../../api/itineraries';
 import DayTimeline from '../../components/planner/DayTimeline';
@@ -89,6 +91,32 @@ export default function TripDetail() {
       await refreshTrip();
     } catch (err) {
       console.error('Failed to delete stop:', err);
+    }
+  };
+
+    const handleUpdateDay = async (dayId: string, place: string, date: string, region: string) => {
+    if (!activeTrip) return;
+    try {
+      await updateItineraryDay(dayId, { place, date, region });
+      await refreshTrip();
+    } catch (err) {
+      console.error('Failed to update day:', err);
+    }
+  };
+
+  const handleUpdateStop = async (
+    stopId: string,
+    name: string,
+    timeLabel: string,
+    category?: string,
+    cost?: number
+  ) => {
+    if (!activeTrip) return;
+    try {
+      await updateItineraryStop(stopId, { name, timeLabel, category, cost });
+      await refreshTrip();
+    } catch (err) {
+      console.error('Failed to update stop:', err);
     }
   };
 
@@ -250,12 +278,14 @@ export default function TripDetail() {
           </div>
 
           {activeTrip.days && activeTrip.days.length > 0 ? (
-            <DayTimeline
+                      <DayTimeline
               days={activeTrip.days}
               onAddDay={handleAddDay}
               onAddStop={handleAddStop}
               onDeleteDay={handleDeleteDay}
               onDeleteStop={handleDeleteStop}
+              onUpdateDay={handleUpdateDay}
+              onUpdateStop={handleUpdateStop}
             />
           ) : (
             <div className="border-2 border-dashed border-[#1C3A2E]/10 rounded-2xl p-10 text-center bg-white/60">

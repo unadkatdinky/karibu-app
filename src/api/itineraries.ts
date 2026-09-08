@@ -59,6 +59,21 @@ export interface AddStopInput {
   sortOrder?: number;
 }
 
+export interface UpdateDayInput {
+  date: string;
+  region: string;
+  place: string;
+  sortOrder?: number;
+}
+
+export interface UpdateStopInput {
+  name: string;
+  timeLabel?: string;
+  cost?: number;
+  category?: string;
+  sortOrder?: number;
+}
+
 export async function fetchItineraries(): Promise<Itinerary[]> {
   const res = await api.get('/itineraries');
   return res.data?.itineraries || [];
@@ -98,4 +113,14 @@ export async function deleteItineraryDay(dayId: string): Promise<void> {
 
 export async function deleteItineraryStop(stopId: string): Promise<void> {
   await api.delete(`/itineraries/stops/${stopId}`);
-}
+}
+
+export async function updateItineraryDay(dayId: string, data: UpdateDayInput): Promise<ItineraryDay> {
+  const res = await api.patch(`/itineraries/days/${dayId}`, data);
+  return res.data.day;
+}
+
+export async function updateItineraryStop(stopId: string, data: UpdateStopInput): Promise<ItineraryStop> {
+  const res = await api.patch(`/itineraries/stops/${stopId}`, data);
+  return res.data.stop;
+}
