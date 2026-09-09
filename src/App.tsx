@@ -28,7 +28,7 @@ const DestinationDetail   = lazy(() => import('./pages/traveler/DestinationDetai
 const GuideDashboard    = lazy(() => import('./pages/guide/GuideDashboard'));
 const CommunityTasks    = lazy(() => import('./pages/guide/CommunityTasks'));
 const AdminDestinations = lazy(() => import('./pages/admin/AdminDestinations'));
-const TrailPlanner       = lazy(() => import('./pages/traveler/TrailPlanner'));
+
 const TripsDashboard    = lazy(() => import('./pages/traveler/TripsDashboard'));
 const TripDetail        = lazy(() => import('./pages/traveler/TripDetail'));
 const NewTrip           = lazy(() => import('./pages/traveler/NewTrip'));
