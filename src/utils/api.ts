@@ -2,8 +2,8 @@ import axios from 'axios';
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api/v1', // Your Go backend URL
-  withCredentials: true, // CRITICAL! This sends cookies automatically
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1',
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
